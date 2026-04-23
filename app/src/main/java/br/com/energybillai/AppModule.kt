@@ -29,6 +29,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -40,6 +41,9 @@ object AppModule {
         return ApiConfig.create(
             baseUrl = BuildConfig.API_BASE_URL,
             environment = BuildConfig.API_ENVIRONMENT,
+            connectTimeoutSeconds = BuildConfig.API_CONNECT_TIMEOUT_SECONDS,
+            readTimeoutSeconds = BuildConfig.API_READ_TIMEOUT_SECONDS,
+            writeTimeoutSeconds = BuildConfig.API_WRITE_TIMEOUT_SECONDS,
         )
     }
 
@@ -61,16 +65,26 @@ object AppModule {
     @Provides
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor {
-        return HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
+        return HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BASIC
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
+        }
     }
 
     @Provides
     @Singleton
     @Named("plain")
     fun providePlainOkHttp(
+        apiConfig: ApiConfig,
         loggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient {
         return OkHttpClient.Builder()
+            .connectTimeout(apiConfig.connectTimeoutSeconds, TimeUnit.SECONDS)
+            .readTimeout(apiConfig.readTimeoutSeconds, TimeUnit.SECONDS)
+            .writeTimeout(apiConfig.writeTimeoutSeconds, TimeUnit.SECONDS)
             .addInterceptor(loggingInterceptor)
             .build()
     }
@@ -78,11 +92,15 @@ object AppModule {
     @Provides
     @Singleton
     fun provideAuthedOkHttp(
+        apiConfig: ApiConfig,
         loggingInterceptor: HttpLoggingInterceptor,
         authHeaderInterceptor: AuthHeaderInterceptor,
         refreshTokenAuthenticator: RefreshTokenAuthenticator,
     ): OkHttpClient {
         return OkHttpClient.Builder()
+            .connectTimeout(apiConfig.connectTimeoutSeconds, TimeUnit.SECONDS)
+            .readTimeout(apiConfig.readTimeoutSeconds, TimeUnit.SECONDS)
+            .writeTimeout(apiConfig.writeTimeoutSeconds, TimeUnit.SECONDS)
             .addInterceptor(authHeaderInterceptor)
             .addInterceptor(loggingInterceptor)
             .authenticator(refreshTokenAuthenticator)

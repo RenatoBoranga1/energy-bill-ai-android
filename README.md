@@ -44,21 +44,23 @@ O tema foi reconstruido com uma paleta inspirada na identidade visual da CPFL:
 
 ## Configuracao local
 
-1. Ajuste a API conforme o alvo:
+1. Em tablet ou celular fisico, mantenha o backend FastAPI rodando na maquina da rede em `http://192.168.31.19:8000/`.
+
+2. Gere o APK debug apontando para esse IP:
 
 ```powershell
 ./gradlew.bat :app:assembleDebug -PAPI_BASE_URL=http://192.168.31.19:8000/ -PAPI_ENVIRONMENT=local
 ```
 
-Em desenvolvimento local, a API deve ser acessada pelo IP da maquina backend na rede.
+O app valida a URL em build/runtime e espera um host acessivel por LAN ou producao. Para producao futura, use `-PAPI_ENVIRONMENT=production` e uma URL HTTPS.
 
-2. Se precisar pular autenticacao em debug:
+3. Se precisar pular autenticacao em debug:
 
 ```powershell
 ./gradlew.bat :app:assembleDebug -PSKIP_LOGIN_FOR_DEV=true
 ```
 
-3. APK gerado em:
+4. APK gerado em:
 
 - `app/build/outputs/apk/debug/app-debug.apk`
 

@@ -5,9 +5,45 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+import java.net.URI
+
+val localApiBaseUrl = "http://192.168.31.19:8000/"
+
 fun escapeBuildConfigString(value: String): String = value
     .replace("\\", "\\\\")
     .replace("\"", "\\\"")
+
+fun normalizeApiBaseUrl(rawValue: String): String {
+    val trimmed = rawValue.trim()
+    return if (trimmed.endsWith("/")) trimmed else "$trimmed/"
+}
+
+fun isDisallowedDevelopmentHost(host: String?): Boolean {
+    if (host.isNullOrBlank()) return true
+    val normalizedHost = host.trim().lowercase()
+    val loopbackHost = listOf(127, 0, 0, 1).joinToString(".")
+    val emulatorHostAlias = listOf(10, 0, 2, 2).joinToString(".")
+    val localHostName = listOf("local", "host").joinToString("")
+    return normalizedHost == loopbackHost ||
+        normalizedHost == emulatorHostAlias ||
+        normalizedHost == localHostName
+}
+
+fun validateApiBaseUrl(baseUrl: String, environment: String) {
+    val uri = URI(baseUrl)
+    val scheme = uri.scheme?.lowercase()
+    require(scheme == "http" || scheme == "https") {
+        "API_BASE_URL must use http or https."
+    }
+    require(!isDisallowedDevelopmentHost(uri.host)) {
+        "API_BASE_URL must point to a reachable LAN or production host."
+    }
+    if (environment.trim().equals("production", ignoreCase = true)) {
+        require(scheme == "https") {
+            "Production API_BASE_URL must use HTTPS."
+        }
+    }
+}
 
 fun resolveBooleanProperty(
     rawValue: String?,
@@ -22,13 +58,16 @@ fun resolveBooleanProperty(
 
 val configuredApiBaseUrl = providers.gradleProperty("API_BASE_URL")
     .orElse(providers.environmentVariable("API_BASE_URL"))
-    .orElse("http://192.168.31.19:8000/")
+    .orElse(localApiBaseUrl)
+    .map(::normalizeApiBaseUrl)
     .get()
 
 val configuredApiEnvironment = providers.gradleProperty("API_ENVIRONMENT")
     .orElse(providers.environmentVariable("API_ENVIRONMENT"))
     .orElse("local")
     .get()
+
+validateApiBaseUrl(configuredApiBaseUrl, configuredApiEnvironment)
 
 val configuredSkipLoginOverride = providers.gradleProperty("SKIP_LOGIN_FOR_DEV")
     .orElse(providers.environmentVariable("SKIP_LOGIN_FOR_DEV"))
@@ -52,6 +91,9 @@ android {
 
         buildConfigField("String", "API_BASE_URL", "\"${escapeBuildConfigString(configuredApiBaseUrl)}\"")
         buildConfigField("String", "API_ENVIRONMENT", "\"${escapeBuildConfigString(configuredApiEnvironment)}\"")
+        buildConfigField("int", "API_CONNECT_TIMEOUT_SECONDS", "20")
+        buildConfigField("int", "API_READ_TIMEOUT_SECONDS", "60")
+        buildConfigField("int", "API_WRITE_TIMEOUT_SECONDS", "90")
         manifestPlaceholders["usesCleartextTraffic"] = "true"
     }
 
