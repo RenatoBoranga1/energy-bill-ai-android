@@ -134,6 +134,9 @@ interface BillHistoryDao {
     @Query("SELECT * FROM bill_history WHERE userId = :userId ORDER BY referenceMonth DESC, billId DESC")
     fun observeHistory(userId: String): Flow<List<BillSummaryEntity>>
 
+    @Query("DELETE FROM bill_history WHERE billId = :billId")
+    suspend fun deleteByBillId(billId: String)
+
     @Query("DELETE FROM bill_history WHERE userId = :userId")
     suspend fun deleteByUser(userId: String)
 

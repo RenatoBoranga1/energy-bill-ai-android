@@ -33,6 +33,7 @@ interface BillRepository {
     suspend fun uploadDocument(payload: UploadPayload): AppResult<UploadedDocument>
     suspend fun extractBill(documentId: String): AppResult<BillReview>
     suspend fun getBill(billId: String): AppResult<BillReview>
+    suspend fun deleteBill(billId: String): AppResult<Unit>
     suspend fun confirmBill(billId: String, data: ReviewedBillData): AppResult<BillReview>
     suspend fun getAnalytics(billId: String): AppResult<BillAnalytics>
     suspend fun getForecast(billId: String): AppResult<BillForecast>

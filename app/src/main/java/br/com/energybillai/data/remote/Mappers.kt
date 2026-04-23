@@ -238,6 +238,7 @@ fun BillForecastDto.toDomain(): BillForecast {
         horizonMonths = horizonMonths,
         historyPointsUsed = historyPointsUsed,
         explanation = explanation,
+        referenceTariffBrlPerKwh = referenceTariffBrlPerKwh,
         generatedForecasts = generatedForecasts.map {
             ForecastPoint(
                 id = it.id,
@@ -246,6 +247,9 @@ fun BillForecastDto.toDomain(): BillForecast {
                 predictedKwh = it.predictedKwh,
                 lowerBoundKwh = it.lowerBoundKwh,
                 upperBoundKwh = it.upperBoundKwh,
+                estimatedValueBrl = it.estimatedValueBrl,
+                lowerBoundValueBrl = it.lowerBoundValueBrl,
+                upperBoundValueBrl = it.upperBoundValueBrl,
                 modelUsed = it.modelUsed,
                 createdAt = it.createdAt,
             )

@@ -150,6 +150,14 @@ class DefaultBillRepository @Inject constructor(
         return safeApiCall(gson) { billService.getBill(billId).toDomain() }
     }
 
+    override suspend fun deleteBill(billId: String): AppResult<Unit> {
+        return safeApiCall(gson) {
+            billService.deleteBill(billId)
+            billHistoryDao.deleteByBillId(billId)
+            Unit
+        }
+    }
+
     override suspend fun confirmBill(billId: String, data: ReviewedBillData): AppResult<BillReview> {
         return safeApiCall(gson) {
             billService.confirm(

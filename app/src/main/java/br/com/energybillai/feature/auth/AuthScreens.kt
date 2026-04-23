@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -15,8 +14,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import br.com.energybillai.core.common.AppError
 import br.com.energybillai.core.common.AppResult
-import br.com.energybillai.core.designsystem.AppCard
 import br.com.energybillai.core.designsystem.AppBrandLockup
+import br.com.energybillai.core.designsystem.AppCard
 import br.com.energybillai.core.designsystem.AppTextField
 import br.com.energybillai.core.designsystem.EnergyScreen
 import br.com.energybillai.core.designsystem.HeroCard
@@ -65,10 +64,14 @@ class LoginViewModel @Inject constructor(
         val current = mutableState.value
         if (current.email.isBlank() || current.password.length < 8) {
             mutableState.value = current.copy(
-                error = AppError("validation_error", "Preencha um e-mail valido e uma senha com pelo menos 8 caracteres."),
+                error = AppError(
+                    code = "validation_error",
+                    message = "Preencha um e-mail válido e uma senha com pelo menos 8 caracteres.",
+                ),
             )
             return
         }
+
         viewModelScope.launch {
             mutableState.value = current.copy(isSubmitting = true, error = null)
             when (val result = loginUseCase(current.email.trim(), current.password)) {
@@ -105,9 +108,18 @@ class RegisterViewModel @Inject constructor(
     fun submit() {
         val current = mutableState.value
         when {
-            current.name.trim().length < 2 -> mutableState.value = current.copy(error = AppError("validation_error", "Informe um nome valido."))
-            current.password.length < 8 -> mutableState.value = current.copy(error = AppError("validation_error", "A senha precisa ter pelo menos 8 caracteres."))
-            current.password != current.confirmPassword -> mutableState.value = current.copy(error = AppError("validation_error", "As senhas nao coincidem."))
+            current.name.trim().length < 2 -> {
+                mutableState.value = current.copy(error = AppError("validation_error", "Informe um nome válido."))
+            }
+
+            current.password.length < 8 -> {
+                mutableState.value = current.copy(error = AppError("validation_error", "A senha precisa ter pelo menos 8 caracteres."))
+            }
+
+            current.password != current.confirmPassword -> {
+                mutableState.value = current.copy(error = AppError("validation_error", "As senhas não coincidem."))
+            }
+
             else -> viewModelScope.launch {
                 mutableState.value = current.copy(isSubmitting = true, error = null)
                 when (val result = registerUseCase(current.name.trim(), current.email.trim(), current.password)) {
@@ -130,12 +142,15 @@ fun LoginScreen(
     EnergyScreen(title = "Acessar", modifier = modifier) {
         AppBrandLockup()
         HeroCard(
-            eyebrow = "Energia inteligente",
-            title = "Controle suas contas com clareza e previsao",
-            supporting = "Acompanhe consumo, revise extracoes de IA e visualize tendencias em uma experiencia inspirada na identidade visual do setor eletrico.",
+            eyebrow = "Energia com inteligência",
+            title = "Entenda sua conta com mais clareza",
+            supporting = "Acompanhe consumo, revise leituras automáticas e antecipe gastos em uma experiência confiável, moderna e fácil de usar.",
         )
 
-        AppCard(title = "Entrar", supporting = "Use sua conta para continuar com upload, analytics e previsoes.") {
+        AppCard(
+            title = "Entrar",
+            supporting = "Use sua conta para enviar faturas, revisar dados e acompanhar projeções de consumo.",
+        ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 state.error?.let { InlineWarning(text = it.message) }
                 AppTextField(
@@ -179,12 +194,11 @@ fun RegisterScreen(
         onBack = onNavigateBack,
     ) {
         AppBrandLockup(
-            title = "Sua conta de energia em um so lugar",
-            subtitle = "Cadastre-se para acompanhar upload, revisao, analytics e forecast com uma experiencia mais clara e confiavel.",
+            subtitle = "Crie sua conta para acompanhar consumo, custos e projeções em um só lugar.",
         )
         AppCard(
-            title = "Cadastro profissional",
-            supporting = "Seu perfil sera usado para centralizar historico, previsoes e revisoes manuais das contas de energia.",
+            title = "Criar sua conta",
+            supporting = "Seu perfil reúne histórico, revisões manuais e projeções para manter a gestão da energia mais simples e segura.",
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 state.error?.let { InlineWarning(text = it.message) }

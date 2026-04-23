@@ -2,6 +2,7 @@ package br.com.energybillai.core.designsystem
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,9 +24,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.WarningAmber
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -34,6 +36,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,32 +62,81 @@ fun EnergyScreen(
     actions: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.68f),
+                        MaterialTheme.colorScheme.background,
+                    ),
+                ),
+            ),
     ) {
-        TopAppBar(
-            title = { Text(text = title, fontWeight = FontWeight.SemiBold) },
-            navigationIcon = {
-                if (showBack && onBack != null) {
-                    TextButton(onClick = onBack) {
-                        Icon(imageVector = Icons.Outlined.ArrowBack, contentDescription = "Voltar")
-                    }
-                }
-            },
-            actions = {
-                actions?.invoke()
-            },
-        )
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .background(Color.Transparent),
         ) {
-            content()
+            Surface(
+                modifier = Modifier
+                    .offset(x = (-32).dp, y = (-24).dp)
+                    .size(220.dp),
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
+                shape = RoundedCornerShape(110.dp),
+            ) {}
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 36.dp, y = 48.dp)
+                    .size(180.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                shape = RoundedCornerShape(90.dp),
+            ) {}
+        }
+        Column(modifier = Modifier.fillMaxSize()) {
+            TopAppBar(
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_brand_mark),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Text(text = title, fontWeight = FontWeight.SemiBold)
+                    }
+                },
+                navigationIcon = {
+                    if (showBack && onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(imageVector = Icons.Outlined.ArrowBack, contentDescription = "Voltar")
+                        }
+                    }
+                },
+                actions = { actions?.invoke() },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+                ),
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                content()
+            }
         }
     }
 }
@@ -99,10 +151,10 @@ fun HeroCard(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.primary,
-        tonalElevation = 4.dp,
+        color = Color.Transparent,
+        shadowElevation = 0.dp,
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
@@ -110,23 +162,49 @@ fun HeroCard(
                         colors = listOf(
                             MaterialTheme.colorScheme.primary,
                             MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.92f),
                         ),
                     ),
+                    shape = RoundedCornerShape(28.dp),
                 )
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(28.dp),
+                ),
         ) {
-            Text(text = eyebrow, color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.labelLarge)
-            Text(text = title, color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.headlineMedium)
-            Text(text = supporting, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.88f), style = MaterialTheme.typography.bodyLarge)
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 28.dp, y = (-36).dp)
+                    .size(150.dp),
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f),
+                shape = RoundedCornerShape(75.dp),
+            ) {}
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = eyebrow.uppercase(),
+                    color = MaterialTheme.colorScheme.secondary,
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                Text(text = title, color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    text = supporting,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.90f),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
         }
     }
 }
 
 @Composable
 fun AppBrandLockup(
-    title: String = "Energy Bill AI",
-    subtitle: String = "Leitura inteligente de contas de energia",
+    title: String = BrandIdentity.appName,
+    subtitle: String = BrandIdentity.shortTagline,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -146,6 +224,7 @@ fun AppBrandLockup(
                         brush = Brush.linearGradient(
                             colors = listOf(
                                 MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.85f),
                                 MaterialTheme.colorScheme.primaryContainer,
                             ),
                         ),
@@ -176,6 +255,7 @@ fun AppBrandLockup(
 fun AppCard(
     title: String,
     modifier: Modifier = Modifier,
+    eyebrow: String? = null,
     supporting: String? = null,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
@@ -185,14 +265,36 @@ fun AppCard(
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         shape = RoundedCornerShape(24.dp),
-        tonalElevation = 3.dp,
+        tonalElevation = 0.dp,
         shadowElevation = 0.dp,
-        color = MaterialTheme.colorScheme.surface,
+        color = Color.Transparent,
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.54f),
+                        ),
+                    ),
+                    shape = RoundedCornerShape(24.dp),
+                )
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f),
+                    shape = RoundedCornerShape(24.dp),
+                )
+                .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (!eyebrow.isNullOrBlank()) {
+                Text(
+                    text = eyebrow.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             Text(text = title, style = MaterialTheme.typography.titleMedium)
             if (!supporting.isNullOrBlank()) {
                 Text(text = supporting, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
@@ -207,18 +309,45 @@ fun MetricChip(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
+    highlighted: Boolean = false,
+    supporting: String? = null,
 ) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = if (highlighted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            modifier = Modifier
+                .border(
+                    width = 1.dp,
+                    color = if (highlighted) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                    } else {
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f)
+                    },
+                    shape = RoundedCornerShape(20.dp),
+                )
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(text = label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(text = value, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = label.uppercase(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                color = if (highlighted) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+            )
+            if (!supporting.isNullOrBlank()) {
+                Text(
+                    text = supporting,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -288,9 +417,15 @@ fun PrimaryActionButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().height(54.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(54.dp),
         enabled = enabled && !loading,
         shape = RoundedCornerShape(18.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        ),
     ) {
         if (loading) {
             CircularProgressIndicator(
@@ -338,9 +473,30 @@ fun LoadingPane(
             .padding(vertical = 32.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Surface(
+                modifier = Modifier.size(72.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_brand_mark),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(42.dp),
+                    )
+                }
+            }
             CircularProgressIndicator()
-            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = BrandIdentity.appName,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
             Text(text = title, style = MaterialTheme.typography.titleMedium)
             Text(text = message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -352,14 +508,22 @@ fun StatusPill(
     text: String,
     color: Color,
 ) {
-    AssistChip(
-        onClick = {},
-        label = { Text(text = text) },
-        colors = AssistChipDefaults.assistChipColors(
-            containerColor = color.copy(alpha = 0.16f),
-            labelColor = color,
-        ),
-    )
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = color.copy(alpha = 0.14f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.25f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Canvas(modifier = Modifier.size(8.dp)) {
+                drawCircle(color = color)
+            }
+            Text(text = text, color = color, style = MaterialTheme.typography.labelLarge)
+        }
+    }
 }
 
 @Composable
@@ -380,16 +544,49 @@ fun SimpleLineChart(
         val range = (maxValue - minValue).takeIf { it > 0 } ?: 1.0
         val horizontalStep = size.width / (points.size - 1).coerceAtLeast(1)
         val path = Path()
+        val areaPath = Path()
         points.forEachIndexed { index, value ->
             val x = index * horizontalStep
             val normalized = ((value - minValue) / range).toFloat()
             val y = size.height - (normalized * size.height)
-            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            if (index == 0) {
+                path.moveTo(x, y)
+                areaPath.moveTo(x, size.height)
+                areaPath.lineTo(x, y)
+            } else {
+                path.lineTo(x, y)
+                areaPath.lineTo(x, y)
+            }
+            drawCircle(
+                color = chartLineColor.copy(alpha = 0.18f),
+                radius = 10f,
+                center = Offset(x, y),
+            )
         }
+        areaPath.lineTo(size.width, size.height)
+        areaPath.close()
+        repeat(3) { index ->
+            val y = size.height * ((index + 1) / 4f)
+            drawLine(
+                color = chartLineColor.copy(alpha = 0.08f),
+                start = Offset(0f, y),
+                end = Offset(size.width, y),
+                strokeWidth = 1.5f,
+            )
+        }
+        drawPath(
+            path = areaPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    chartLineColor.copy(alpha = 0.28f),
+                    chartLineColor.copy(alpha = 0.02f),
+                ),
+            ),
+        )
         drawPath(
             path = path,
             color = chartLineColor,
-            style = Stroke(width = 8f, cap = StrokeCap.Round),
+            style = Stroke(width = 6f, cap = StrokeCap.Round),
         )
     }
 }
@@ -410,6 +607,15 @@ fun ForecastBandChart(
         val lower = predictions.minOf { it.second }
         val range = (upper - lower).takeIf { it > 0 } ?: 1.0
         val step = size.width / (predictions.size - 1).coerceAtLeast(1)
+        repeat(3) { index ->
+            val y = size.height * ((index + 1) / 4f)
+            drawLine(
+                color = primaryColor.copy(alpha = 0.08f),
+                start = Offset(0f, y),
+                end = Offset(size.width, y),
+                strokeWidth = 1.5f,
+            )
+        }
 
         val envelope = Path()
         predictions.forEachIndexed { index, value ->
@@ -460,4 +666,37 @@ fun ForecastBandChart(
             }
         }
     }
+}
+
+@Composable
+fun SectionHeader(
+    title: String,
+    supporting: String? = null,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(text = title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+        if (!supporting.isNullOrBlank()) {
+            Text(text = supporting, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+fun ActionTile(
+    title: String,
+    supporting: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AppCard(
+        title = title,
+        supporting = supporting,
+        modifier = modifier,
+        onClick = onClick,
+        eyebrow = "Atalho",
+    ) {}
 }

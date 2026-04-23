@@ -68,9 +68,9 @@ private data class BottomDestination(
 )
 
 private val bottomDestinations = listOf(
-    BottomDestination(AppRoute.Dashboard.route, "Resumo", Icons.Outlined.BarChart),
-    BottomDestination(AppRoute.Upload.route, "Upload", Icons.Outlined.AddCircleOutline),
-    BottomDestination(AppRoute.History.route, "Historico", Icons.Outlined.History),
+    BottomDestination(AppRoute.Dashboard.route, "Início", Icons.Outlined.BarChart),
+    BottomDestination(AppRoute.Upload.route, "Enviar", Icons.Outlined.AddCircleOutline),
+    BottomDestination(AppRoute.History.route, "Histórico", Icons.Outlined.History),
     BottomDestination(AppRoute.Profile.route, "Perfil", Icons.Outlined.AccountCircle),
 )
 
@@ -81,7 +81,10 @@ fun EnergyBillRoot(
     val state by viewModel.state.collectAsStateWithLifecycle()
     EnergyBillTheme {
         if (state.isLoading) {
-            LoadingPane(title = "Preparando sua experiencia", message = "Carregando sessao local e conectividade base.")
+            LoadingPane(
+                title = "Preparando seu painel",
+                message = "Validando sua sessão e conectando os dados com segurança.",
+            )
         } else if (state.isAuthenticated) {
             AuthenticatedNavHost()
         } else {
@@ -173,7 +176,13 @@ private fun AuthenticatedNavHost() {
                 route = AppRoute.Review.route,
                 arguments = listOf(navArgument("billId") { type = NavType.StringType }),
             ) {
-                ReviewScreen(onNavigateBack = { navController.popBackStack() })
+                ReviewScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onOpenConfirmedBill = { billId ->
+                        navController.popBackStack()
+                        navController.navigate(AppRoute.BillDetail.create(billId))
+                    },
+                )
             }
             composable(
                 route = AppRoute.Analytics.route,

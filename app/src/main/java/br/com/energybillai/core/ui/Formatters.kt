@@ -1,5 +1,6 @@
 package br.com.energybillai.core.ui
 
+import br.com.energybillai.domain.model.BillExtractionStatus
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -33,4 +34,37 @@ fun String?.toDateLabel(): String {
             else -> OffsetDateTime.parse(this).format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
         }
     }.getOrElse { this }
+}
+
+fun BillExtractionStatus.toUiLabel(): String {
+    return when (this) {
+        BillExtractionStatus.PENDING_REVIEW -> "Aguardando revisão"
+        BillExtractionStatus.CONFIRMED -> "Confirmada"
+        BillExtractionStatus.REJECTED -> "Rejeitada"
+        BillExtractionStatus.FAILED -> "Falha na extração"
+    }
+}
+
+fun String?.toTrendLabel(): String {
+    val normalized = this?.trim()?.lowercase()?.replace("-", "_") ?: return "--"
+    return when (normalized) {
+        "up", "alta", "increasing", "rising", "growth" -> "Tendência de alta"
+        "down", "queda", "decreasing", "falling", "drop" -> "Tendência de queda"
+        "stable", "stability", "estavel", "steady" -> "Estável"
+        else -> normalized
+            .replace("_", " ")
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale("pt", "BR")) else it.toString() }
+    }
+}
+
+fun String?.toForecastModelLabel(): String {
+    val normalized = this?.trim()?.lowercase() ?: return "Modelo não identificado"
+    return when (normalized) {
+        "prophet" -> "Modelo estatístico Prophet"
+        "moving_average_linear_trend" -> "Média móvel com tendência linear"
+        "neuralprophet" -> "Modelo NeuralProphet"
+        else -> normalized
+            .replace("_", " ")
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale("pt", "BR")) else it.toString() }
+    }
 }

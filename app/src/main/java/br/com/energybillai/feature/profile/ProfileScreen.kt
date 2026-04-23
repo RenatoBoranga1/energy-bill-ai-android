@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import br.com.energybillai.core.common.AppResult
 import br.com.energybillai.core.common.UiState
+import br.com.energybillai.core.designsystem.AppBrandLockup
 import br.com.energybillai.core.designsystem.AppCard
 import br.com.energybillai.core.designsystem.EnergyScreen
 import br.com.energybillai.core.designsystem.EmptyStatePane
@@ -59,9 +60,12 @@ fun ProfileScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     EnergyScreen(title = "Perfil") {
+        AppBrandLockup(
+            subtitle = "Gerencie sua sessão, confira o ambiente ativo e mantenha o app pronto para uso em campo.",
+        )
         when (val content = state) {
-            UiState.Loading -> LoadingPane("Carregando sessao", "Lendo dados locais do usuario autenticado.")
-            UiState.Empty -> EmptyStatePane("Sem sessao", "Nenhum usuario autenticado foi encontrado.")
+            UiState.Loading -> LoadingPane("Carregando sessão", "Lendo dados locais do usuário autenticado.")
+            UiState.Empty -> EmptyStatePane("Sem sessão", "Nenhum usuário autenticado foi encontrado.")
             is UiState.Error -> EmptyStatePane("Falha", content.error.message)
             is UiState.Success -> {
                 AppCard(title = "Conta") {
@@ -73,8 +77,8 @@ fun ProfileScreen(
                     androidx.compose.material3.Text(text = "API: ${viewModel.apiConfig.environment.displayName}")
                     androidx.compose.material3.Text(text = viewModel.apiConfig.baseUrl)
                 }
-                AppCard(title = "Sessao") {
-                    androidx.compose.material3.Text(text = "O app renova o access token automaticamente quando o refresh token ainda esta valido.")
+                AppCard(title = "Sessão") {
+                    androidx.compose.material3.Text(text = "O app renova o token de acesso automaticamente enquanto o refresh token ainda estiver válido.")
                     PrimaryActionButton(text = "Sair da conta", onClick = viewModel::logout)
                 }
             }

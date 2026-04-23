@@ -104,7 +104,7 @@ android {
             buildConfigField(
                 "boolean",
                 "SKIP_LOGIN_FOR_DEV",
-                resolveBooleanProperty(configuredSkipLoginOverride, true).toString(),
+                resolveBooleanProperty(configuredSkipLoginOverride, false).toString(),
             )
         }
 

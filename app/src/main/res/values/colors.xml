@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="cpfl_blue">#0057B8</color>
-    <color name="cpfl_blue_deep">#073B7A</color>
-    <color name="cpfl_gold">#FFC72C</color>
-    <color name="cpfl_white">#FFFFFF</color>
+    <color name="brand_blue">#163E63</color>
+    <color name="brand_blue_deep">#0B2747</color>
+    <color name="brand_green">#18A76E</color>
+    <color name="brand_green_soft">#D9F6E7</color>
+    <color name="brand_white">#F4F8FC</color>
 </resources>

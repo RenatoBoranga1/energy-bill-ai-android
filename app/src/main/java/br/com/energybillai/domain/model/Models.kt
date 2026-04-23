@@ -217,6 +217,9 @@ data class ForecastPoint(
     val predictedKwh: Double,
     val lowerBoundKwh: Double,
     val upperBoundKwh: Double,
+    val estimatedValueBrl: Double?,
+    val lowerBoundValueBrl: Double?,
+    val upperBoundValueBrl: Double?,
     val modelUsed: String,
     val createdAt: String,
 )
@@ -228,6 +231,7 @@ data class BillForecast(
     val horizonMonths: Int,
     val historyPointsUsed: Int,
     val explanation: String,
+    val referenceTariffBrlPerKwh: Double?,
     val generatedForecasts: List<ForecastPoint>,
     val insights: List<Insight>,
 )

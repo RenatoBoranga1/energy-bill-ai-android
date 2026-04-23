@@ -1,6 +1,7 @@
 package br.com.energybillai.data.remote
 
 import okhttp3.MultipartBody
+import retrofit2.http.DELETE
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Multipart
@@ -221,6 +222,9 @@ data class ForecastPointDto(
     val predictedKwh: Double,
     val lowerBoundKwh: Double,
     val upperBoundKwh: Double,
+    val estimatedValueBrl: Double?,
+    val lowerBoundValueBrl: Double?,
+    val upperBoundValueBrl: Double?,
     val modelUsed: String,
     val createdAt: String,
 )
@@ -232,6 +236,7 @@ data class BillForecastDto(
     val horizonMonths: Int,
     val historyPointsUsed: Int,
     val explanation: String,
+    val referenceTariffBrlPerKwh: Double?,
     val generatedForecasts: List<ForecastPointDto>,
     val insights: List<InsightDto>,
 )
@@ -273,6 +278,9 @@ interface BillService {
 
     @GET("api/v1/bills/{billId}")
     suspend fun getBill(@Path("billId") billId: String): BillReviewDto
+
+    @DELETE("api/v1/bills/{billId}")
+    suspend fun deleteBill(@Path("billId") billId: String)
 
     @POST("api/v1/bills/{billId}/confirm")
     suspend fun confirm(@Path("billId") billId: String, @Body payload: ConfirmBillRequestDto): BillReviewDto
