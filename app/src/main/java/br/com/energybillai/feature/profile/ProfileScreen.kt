@@ -6,7 +6,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import br.com.energybillai.BuildConfig
 import br.com.energybillai.core.common.AppResult
 import br.com.energybillai.core.common.UiState
 import br.com.energybillai.core.designsystem.AppCard
@@ -14,6 +13,7 @@ import br.com.energybillai.core.designsystem.EnergyScreen
 import br.com.energybillai.core.designsystem.EmptyStatePane
 import br.com.energybillai.core.designsystem.LoadingPane
 import br.com.energybillai.core.designsystem.PrimaryActionButton
+import br.com.energybillai.core.network.ApiConfig
 import br.com.energybillai.domain.model.AuthSession
 import br.com.energybillai.domain.usecase.GetCurrentSessionUseCase
 import br.com.energybillai.domain.usecase.LogoutUseCase
@@ -29,6 +29,7 @@ class ProfileViewModel @Inject constructor(
     observeSessionUseCase: ObserveSessionUseCase,
     private val getCurrentSessionUseCase: GetCurrentSessionUseCase,
     private val logoutUseCase: LogoutUseCase,
+    val apiConfig: ApiConfig,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow<UiState<AuthSession>>(UiState.Loading)
     val state = mutableState.asStateFlow()
@@ -69,8 +70,8 @@ fun ProfileScreen(
                     androidx.compose.material3.Text(text = "Criado em ${content.data.user.createdAt}")
                 }
                 AppCard(title = "Ambiente") {
-                    androidx.compose.material3.Text(text = "API: ${BuildConfig.API_ENVIRONMENT}")
-                    androidx.compose.material3.Text(text = BuildConfig.API_BASE_URL)
+                    androidx.compose.material3.Text(text = "API: ${viewModel.apiConfig.environment.displayName}")
+                    androidx.compose.material3.Text(text = viewModel.apiConfig.baseUrl)
                 }
                 AppCard(title = "Sessao") {
                     androidx.compose.material3.Text(text = "O app renova o access token automaticamente quando o refresh token ainda esta valido.")

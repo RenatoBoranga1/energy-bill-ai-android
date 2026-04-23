@@ -47,10 +47,10 @@ O tema foi reconstruido com uma paleta inspirada na identidade visual da CPFL:
 1. Ajuste a API conforme o alvo:
 
 ```powershell
-./gradlew.bat :app:assembleDebug -PAPI_BASE_URL=http://10.0.2.2:8000/ -PAPI_ENVIRONMENT=local
+./gradlew.bat :app:assembleDebug -PAPI_BASE_URL=http://192.168.31.19:8000/ -PAPI_ENVIRONMENT=local
 ```
 
-Para celular fisico, troque a URL pelo IP da maquina.
+Em desenvolvimento local, a API deve ser acessada pelo IP da maquina backend na rede.
 
 2. Se precisar pular autenticacao em debug:
 

@@ -22,7 +22,7 @@ fun resolveBooleanProperty(
 
 val configuredApiBaseUrl = providers.gradleProperty("API_BASE_URL")
     .orElse(providers.environmentVariable("API_BASE_URL"))
-    .orElse("http://10.0.2.2:8000/")
+    .orElse("http://192.168.31.19:8000/")
     .get()
 
 val configuredApiEnvironment = providers.gradleProperty("API_ENVIRONMENT")
@@ -52,6 +52,7 @@ android {
 
         buildConfigField("String", "API_BASE_URL", "\"${escapeBuildConfigString(configuredApiBaseUrl)}\"")
         buildConfigField("String", "API_ENVIRONMENT", "\"${escapeBuildConfigString(configuredApiEnvironment)}\"")
+        manifestPlaceholders["usesCleartextTraffic"] = "true"
     }
 
     buildTypes {
@@ -67,6 +68,7 @@ android {
 
         release {
             isMinifyEnabled = false
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
             buildConfigField(
                 "boolean",
                 "SKIP_LOGIN_FOR_DEV",

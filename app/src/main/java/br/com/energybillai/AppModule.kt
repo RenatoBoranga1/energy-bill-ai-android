@@ -1,5 +1,6 @@
 package br.com.energybillai
 
+import br.com.energybillai.core.network.ApiConfig
 import br.com.energybillai.core.network.AuthHeaderInterceptor
 import br.com.energybillai.core.network.RefreshTokenAuthenticator
 import br.com.energybillai.data.local.BillHistoryDao
@@ -32,6 +33,15 @@ import retrofit2.converter.gson.GsonConverterFactory
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideApiConfig(): ApiConfig {
+        return ApiConfig.create(
+            baseUrl = BuildConfig.API_BASE_URL,
+            environment = BuildConfig.API_ENVIRONMENT,
+        )
+    }
 
     @Provides
     @Singleton
@@ -83,11 +93,12 @@ object AppModule {
     @Singleton
     @Named("plain")
     fun providePlainRetrofit(
+        apiConfig: ApiConfig,
         gson: Gson,
         @Named("plain") okHttpClient: OkHttpClient,
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL)
+            .baseUrl(apiConfig.baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
@@ -96,11 +107,12 @@ object AppModule {
     @Provides
     @Singleton
     fun provideAuthedRetrofit(
+        apiConfig: ApiConfig,
         gson: Gson,
         okHttpClient: OkHttpClient,
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL)
+            .baseUrl(apiConfig.baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
