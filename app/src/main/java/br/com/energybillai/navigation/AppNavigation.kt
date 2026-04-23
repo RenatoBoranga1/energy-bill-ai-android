@@ -19,6 +19,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -74,6 +75,30 @@ private val bottomDestinations = listOf(
     BottomDestination(AppRoute.Profile.route, "Perfil", Icons.Outlined.AccountCircle),
 )
 
+private fun NavHostController.navigateToTopLevel(route: String) {
+    if (route == AppRoute.Dashboard.route) {
+        val restored = popBackStack(AppRoute.Dashboard.route, inclusive = false)
+        if (!restored || currentDestination?.route != AppRoute.Dashboard.route) {
+            navigate(AppRoute.Dashboard.route) {
+                popUpTo(graph.findStartDestination().id) {
+                    saveState = false
+                }
+                launchSingleTop = true
+                restoreState = false
+            }
+        }
+        return
+    }
+
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
 @Composable
 fun EnergyBillRoot(
     viewModel: AppEntryViewModel = hiltViewModel(),
@@ -111,7 +136,7 @@ private fun AuthenticatedNavHost() {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destination = backStackEntry?.destination
-    val showBottomBar = bottomDestinations.any { item -> destination?.hierarchy?.any { it.route == item.route } == true }
+    val showBottomBar = destination != null
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -123,13 +148,7 @@ private fun AuthenticatedNavHost() {
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                                navController.navigateToTopLevel(item.route)
                             },
                             icon = { Icon(item.icon, contentDescription = item.label) },
                             label = { Text(item.label) },
