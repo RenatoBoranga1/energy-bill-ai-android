@@ -17,6 +17,15 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.withTransaction
+import br.com.energybillai.data.local.game.AchievementDao
+import br.com.energybillai.data.local.game.AchievementEntity
+import br.com.energybillai.data.local.game.EnergyChallengeDao
+import br.com.energybillai.data.local.game.EnergyChallengeEntity
+import br.com.energybillai.data.local.game.GAME_DB_MIGRATION_1_2
+import br.com.energybillai.data.local.game.MeterReadingDao
+import br.com.energybillai.data.local.game.MeterReadingEntity
+import br.com.energybillai.data.local.game.UserScoreDao
+import br.com.energybillai.data.local.game.UserScoreEntity
 import br.com.energybillai.domain.model.AuthSession
 import br.com.energybillai.domain.model.AuthTokens
 import br.com.energybillai.domain.model.BillExtractionStatus
@@ -148,12 +157,22 @@ interface BillHistoryDao {
 }
 
 @Database(
-    entities = [BillSummaryEntity::class],
-    version = 1,
+    entities = [
+        BillSummaryEntity::class,
+        EnergyChallengeEntity::class,
+        MeterReadingEntity::class,
+        UserScoreEntity::class,
+        AchievementEntity::class,
+    ],
+    version = 2,
     exportSchema = false,
 )
 abstract class EnergyBillDatabase : RoomDatabase() {
     abstract fun billHistoryDao(): BillHistoryDao
+    abstract fun energyChallengeDao(): EnergyChallengeDao
+    abstract fun meterReadingDao(): MeterReadingDao
+    abstract fun userScoreDao(): UserScoreDao
+    abstract fun achievementDao(): AchievementDao
 }
 
 @Singleton
@@ -165,7 +184,9 @@ class DatabaseFactory @Inject constructor(
             context,
             EnergyBillDatabase::class.java,
             "energy_bill_ai.db",
-        ).build()
+        )
+            .addMigrations(GAME_DB_MIGRATION_1_2)
+            .build()
     }
 }
 

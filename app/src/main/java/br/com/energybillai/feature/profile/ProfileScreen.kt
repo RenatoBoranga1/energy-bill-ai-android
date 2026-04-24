@@ -55,6 +55,7 @@ class ProfileViewModel @Inject constructor(
 
 @Composable
 fun ProfileScreen(
+    onOpenMeterReading: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -80,6 +81,16 @@ fun ProfileScreen(
                 AppCard(title = "Sessão") {
                     androidx.compose.material3.Text(text = "O app renova o token de acesso automaticamente enquanto o refresh token ainda estiver válido.")
                     PrimaryActionButton(text = "Sair da conta", onClick = viewModel::logout)
+                }
+                AppCard(
+                    title = "Leitura semanal do medidor",
+                    eyebrow = "Energy Game",
+                    supporting = "Registre a leitura real do medidor para acompanhar o consumo semanal, atualizar desafios e medir a economia com mais precisão.",
+                ) {
+                    PrimaryActionButton(
+                        text = "Registrar leitura semanal",
+                        onClick = onOpenMeterReading,
+                    )
                 }
             }
             UiState.Idle -> Unit

@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -27,7 +28,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import br.com.energybillai.AppEntryViewModel
-import br.com.energybillai.BuildConfig
 import br.com.energybillai.core.designsystem.EnergyBillTheme
 import br.com.energybillai.core.designsystem.LoadingPane
 import br.com.energybillai.feature.analytics.AnalyticsScreen
@@ -36,7 +36,10 @@ import br.com.energybillai.feature.auth.RegisterScreen
 import br.com.energybillai.feature.dashboard.DashboardScreen
 import br.com.energybillai.feature.detail.BillDetailScreen
 import br.com.energybillai.feature.forecast.ForecastScreen
+import br.com.energybillai.feature.game.EnergyGameScreen
 import br.com.energybillai.feature.history.HistoryScreen
+import br.com.energybillai.feature.meterreading.MeterReadingCaptureScreen
+import br.com.energybillai.feature.meterreading.MeterReadingReviewScreen
 import br.com.energybillai.feature.profile.ProfileScreen
 import br.com.energybillai.feature.review.ReviewScreen
 import br.com.energybillai.feature.upload.UploadScreen
@@ -60,6 +63,11 @@ sealed class AppRoute(val route: String) {
     data object Forecast : AppRoute("forecast/{billId}") {
         fun create(billId: String): String = "forecast/$billId"
     }
+    data object EnergyGame : AppRoute("energy-game")
+    data object MeterReadingCapture : AppRoute("meter-reading/capture")
+    data object MeterReadingReview : AppRoute("meter-reading/review/{draftId}") {
+        fun create(draftId: String): String = "meter-reading/review/$draftId"
+    }
 }
 
 private data class BottomDestination(
@@ -71,6 +79,7 @@ private data class BottomDestination(
 private val bottomDestinations = listOf(
     BottomDestination(AppRoute.Dashboard.route, "Início", Icons.Outlined.BarChart),
     BottomDestination(AppRoute.Upload.route, "Enviar", Icons.Outlined.AddCircleOutline),
+    BottomDestination(AppRoute.EnergyGame.route, "Jogo", Icons.Outlined.Bolt),
     BottomDestination(AppRoute.History.route, "Histórico", Icons.Outlined.History),
     BottomDestination(AppRoute.Profile.route, "Perfil", Icons.Outlined.AccountCircle),
 )
@@ -170,6 +179,8 @@ private fun AuthenticatedNavHost() {
                     onOpenBillDetail = { navController.navigate(AppRoute.BillDetail.create(it)) },
                     onOpenAnalytics = { navController.navigate(AppRoute.Analytics.create(it)) },
                     onOpenForecast = { navController.navigate(AppRoute.Forecast.create(it)) },
+                    onOpenEnergyGame = { navController.navigate(AppRoute.EnergyGame.route) },
+                    onOpenMeterReading = { navController.navigate(AppRoute.MeterReadingCapture.route) },
                 )
             }
             composable(AppRoute.Upload.route) {
@@ -179,7 +190,9 @@ private fun AuthenticatedNavHost() {
                 HistoryScreen(onOpenBillDetail = { navController.navigate(AppRoute.BillDetail.create(it)) })
             }
             composable(AppRoute.Profile.route) {
-                ProfileScreen()
+                ProfileScreen(
+                    onOpenMeterReading = { navController.navigate(AppRoute.MeterReadingCapture.route) },
+                )
             }
             composable(
                 route = AppRoute.BillDetail.route,
@@ -219,6 +232,30 @@ private fun AuthenticatedNavHost() {
                 ForecastScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onOpenAnalytics = { navController.navigate(AppRoute.Analytics.create(it)) },
+                )
+            }
+            composable(AppRoute.EnergyGame.route) {
+                EnergyGameScreen(
+                    showBack = false,
+                    onNavigateBack = { navController.navigateToTopLevel(AppRoute.Dashboard.route) },
+                    onOpenMeterReading = { navController.navigate(AppRoute.MeterReadingCapture.route) },
+                    onOpenUpload = { navController.navigate(AppRoute.Upload.route) },
+                )
+            }
+            composable(AppRoute.MeterReadingCapture.route) {
+                MeterReadingCaptureScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onOpenReview = { draftId -> navController.navigate(AppRoute.MeterReadingReview.create(draftId)) },
+                )
+            }
+            composable(
+                route = AppRoute.MeterReadingReview.route,
+                arguments = listOf(navArgument("draftId") { type = NavType.StringType }),
+            ) {
+                MeterReadingReviewScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onRetakePhoto = { navController.popBackStack() },
+                    onDone = { navController.navigateToTopLevel(AppRoute.Profile.route) },
                 )
             }
         }

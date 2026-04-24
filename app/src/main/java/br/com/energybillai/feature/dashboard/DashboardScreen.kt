@@ -2,8 +2,11 @@ package br.com.energybillai.feature.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -30,6 +33,9 @@ import br.com.energybillai.core.ui.toKwhLabel
 import br.com.energybillai.core.ui.toMonthLabel
 import br.com.energybillai.core.ui.toTrendLabel
 import br.com.energybillai.core.ui.toUiLabel
+import br.com.energybillai.domain.game.model.GameProgress
+import br.com.energybillai.domain.game.usecase.EnsureActiveChallengeUseCase
+import br.com.energybillai.domain.game.usecase.ObserveGameProgressUseCase
 import br.com.energybillai.domain.model.BillAnalytics
 import br.com.energybillai.domain.model.BillForecast
 import br.com.energybillai.domain.model.BillExtractionStatus
@@ -53,6 +59,7 @@ data class DashboardUiModel(
     val forecast: BillForecast?,
     val reviewQueueCount: Int,
     val confirmedCount: Int,
+    val gameProgress: GameProgress? = null,
 )
 
 data class DashboardUiState(
@@ -67,12 +74,16 @@ class DashboardViewModel @Inject constructor(
     private val refreshHistoryUseCase: RefreshHistoryUseCase,
     private val getAnalyticsUseCase: GetAnalyticsUseCase,
     private val getForecastUseCase: GetForecastUseCase,
+    private val observeGameProgressUseCase: ObserveGameProgressUseCase,
+    private val ensureActiveChallengeUseCase: EnsureActiveChallengeUseCase,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(DashboardUiState())
     val state = mutableState.asStateFlow()
     private var historyJob: Job? = null
+    private var gameJob: Job? = null
     private var currentUserId: String? = null
+    private var latestGameProgress: GameProgress? = null
 
     init {
         viewModelScope.launch {
@@ -80,10 +91,13 @@ class DashboardViewModel @Inject constructor(
                 val userId = session?.user?.id
                 if (userId.isNullOrBlank()) {
                     historyJob?.cancel()
+                    gameJob?.cancel()
                     currentUserId = null
+                    latestGameProgress = null
                     mutableState.value = DashboardUiState(content = UiState.Empty)
                 } else if (currentUserId != userId) {
                     currentUserId = userId
+                    observeGameProgress(userId)
                     observeHistory(userId)
                     refresh()
                 }
@@ -126,6 +140,11 @@ class DashboardViewModel @Inject constructor(
                     } else {
                         null
                     }
+                    ensureActiveChallengeUseCase(
+                        userId = userId,
+                        history = bills,
+                        forecast = forecast,
+                    )
                     mutableState.value = DashboardUiState(
                         content = UiState.Success(
                             DashboardUiModel(
@@ -134,7 +153,25 @@ class DashboardViewModel @Inject constructor(
                                 forecast = forecast,
                                 reviewQueueCount = bills.count { it.reviewRequired },
                                 confirmedCount = bills.count { it.extractionStatus == BillExtractionStatus.CONFIRMED },
+                                gameProgress = latestGameProgress,
                             ),
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
+    private fun observeGameProgress(userId: String) {
+        gameJob?.cancel()
+        gameJob = viewModelScope.launch {
+            observeGameProgressUseCase(userId).collectLatest { progress ->
+                latestGameProgress = progress
+                val currentContent = mutableState.value.content
+                if (currentContent is UiState.Success) {
+                    mutableState.value = mutableState.value.copy(
+                        content = UiState.Success(
+                            currentContent.data.copy(gameProgress = progress),
                         ),
                     )
                 }
@@ -150,6 +187,8 @@ fun DashboardScreen(
     onOpenBillDetail: (String) -> Unit,
     onOpenAnalytics: (String) -> Unit,
     onOpenForecast: (String) -> Unit,
+    onOpenEnergyGame: () -> Unit,
+    onOpenMeterReading: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
@@ -213,6 +252,49 @@ fun DashboardScreen(
                         modifier = Modifier.weight(1f),
                         supporting = "Demandam conferência",
                     )
+                }
+                content.data.gameProgress?.let { gameProgress ->
+                    AppCard(
+                        title = "Desafio de economia",
+                        eyebrow = "Energy Game",
+                        supporting = gameProgress.motivationalMessage
+                            ?: "Use leituras semanais do medidor para acompanhar seu progresso com mais precisão.",
+                    ) {
+                        gameProgress.activeChallenge?.let { challenge ->
+                            MetricChip(
+                                label = "Desafio ativo",
+                                value = "${challenge.progressPercent.toInt()}%",
+                                supporting = challenge.title,
+                                highlighted = true,
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            MetricChip(
+                                label = "Nivel",
+                                value = gameProgress.userScore?.levelName ?: "Iniciante",
+                                modifier = Modifier.weight(1f),
+                                supporting = gameProgress.userScore?.let { "${it.totalXp} XP" } ?: "comece agora",
+                            )
+                            MetricChip(
+                                label = "Leitura",
+                                value = if (gameProgress.pendingWeeklyReading) "Pendente" else "Em dia",
+                                modifier = Modifier.weight(1f),
+                                supporting = if (gameProgress.pendingWeeklyReading) "registre o medidor" else "progresso atualizado",
+                            )
+                        }
+                        if (gameProgress.pendingWeeklyReading) {
+                            PrimaryActionButton(
+                                text = "Registrar leitura semanal",
+                                onClick = onOpenMeterReading,
+                            )
+                        }
+                        TextButton(
+                            onClick = onOpenEnergyGame,
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                        ) {
+                            Text("Abrir painel do jogo")
+                        }
+                    }
                 }
                 AppCard(
                     title = "Status e tendência",

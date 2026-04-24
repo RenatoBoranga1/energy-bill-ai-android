@@ -6,12 +6,20 @@ import br.com.energybillai.core.network.RefreshTokenAuthenticator
 import br.com.energybillai.data.local.BillHistoryDao
 import br.com.energybillai.data.local.DatabaseFactory
 import br.com.energybillai.data.local.EnergyBillDatabase
+import br.com.energybillai.data.local.game.AchievementDao
+import br.com.energybillai.data.local.game.EnergyChallengeDao
+import br.com.energybillai.data.local.game.MeterReadingDao
+import br.com.energybillai.data.local.game.UserScoreDao
 import br.com.energybillai.data.repository.DefaultAuthRepository
 import br.com.energybillai.data.repository.DefaultBillRepository
 import br.com.energybillai.data.repository.DefaultSessionRepository
+import br.com.energybillai.data.repository.game.DefaultGameRepository
+import br.com.energybillai.data.repository.game.DefaultMeterReadingRepository
 import br.com.energybillai.data.remote.AuthService
 import br.com.energybillai.data.remote.BillService
 import br.com.energybillai.data.remote.DocumentService
+import br.com.energybillai.domain.game.repository.GameRepository
+import br.com.energybillai.domain.game.repository.MeterReadingRepository
 import br.com.energybillai.domain.repository.AuthRepository
 import br.com.energybillai.domain.repository.BillRepository
 import br.com.energybillai.domain.repository.SessionRepository
@@ -61,6 +69,18 @@ object AppModule {
 
     @Provides
     fun provideBillHistoryDao(database: EnergyBillDatabase): BillHistoryDao = database.billHistoryDao()
+
+    @Provides
+    fun provideEnergyChallengeDao(database: EnergyBillDatabase): EnergyChallengeDao = database.energyChallengeDao()
+
+    @Provides
+    fun provideMeterReadingDao(database: EnergyBillDatabase): MeterReadingDao = database.meterReadingDao()
+
+    @Provides
+    fun provideUserScoreDao(database: EnergyBillDatabase): UserScoreDao = database.userScoreDao()
+
+    @Provides
+    fun provideAchievementDao(database: EnergyBillDatabase): AchievementDao = database.achievementDao()
 
     @Provides
     @Singleton
@@ -164,4 +184,12 @@ abstract class RepositoryBindings {
     @Binds
     @Singleton
     abstract fun bindBillRepository(implementation: DefaultBillRepository): BillRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGameRepository(implementation: DefaultGameRepository): GameRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMeterReadingRepository(implementation: DefaultMeterReadingRepository): MeterReadingRepository
 }
