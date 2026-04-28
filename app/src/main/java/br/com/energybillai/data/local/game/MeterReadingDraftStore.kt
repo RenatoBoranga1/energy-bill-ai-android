@@ -1,5 +1,6 @@
 package br.com.energybillai.data.local.game
 
+import br.com.energybillai.core.ocr.MeterReadingOcrCandidate
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -12,6 +13,7 @@ data class MeterReadingDraft(
     val extractedValue: Long?,
     val confidenceScore: Double?,
     val rawText: String,
+    val candidates: List<MeterReadingOcrCandidate> = emptyList(),
     val warningMessage: String? = null,
     val createdAt: String = Instant.now().toString(),
 )

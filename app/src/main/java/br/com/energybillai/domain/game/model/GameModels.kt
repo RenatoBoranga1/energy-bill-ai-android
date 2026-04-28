@@ -9,6 +9,7 @@ enum class EnergyChallengeType {
 }
 
 enum class EnergyChallengeStatus {
+    SUGGESTED,
     ACTIVE,
     COMPLETED,
     FAILED,
@@ -130,6 +131,7 @@ data class GameEngineResult(
 )
 
 data class GameProgress(
+    val suggestedChallenge: EnergyChallenge? = null,
     val activeChallenge: EnergyChallenge? = null,
     val latestWeeklyConsumption: WeeklyConsumption? = null,
     val userScore: UserScore? = null,

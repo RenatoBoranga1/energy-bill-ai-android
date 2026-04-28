@@ -27,6 +27,10 @@ class DefaultGameRepository @Inject constructor(
     private val achievementDao: AchievementDao,
 ) : GameRepository {
 
+    override fun observeSuggestedChallenge(userId: String): Flow<EnergyChallenge?> {
+        return challengeDao.observeSuggestedChallenge(userId).map { it?.toDomain() }
+    }
+
     override fun observeActiveChallenge(userId: String): Flow<EnergyChallenge?> {
         return challengeDao.observeActiveChallenge(userId).map { it?.toDomain() }
     }
@@ -43,10 +47,24 @@ class DefaultGameRepository @Inject constructor(
         challengeDao.upsert(challenge.toEntity())
     }
 
+    override suspend fun acceptSuggestedChallenge(challengeId: String) {
+        challengeDao.acceptSuggestedChallenge(
+            challengeId = challengeId,
+            updatedAt = Instant.now().toString(),
+        )
+    }
+
     override suspend fun updateChallengeStatus(challengeId: String, status: EnergyChallengeStatus) {
         challengeDao.updateStatus(
             challengeId = challengeId,
             status = status.name,
+            updatedAt = Instant.now().toString(),
+        )
+    }
+
+    override suspend fun clearSuggestedChallenges(userId: String) {
+        challengeDao.clearSuggestedChallenges(
+            userId = userId,
             updatedAt = Instant.now().toString(),
         )
     }

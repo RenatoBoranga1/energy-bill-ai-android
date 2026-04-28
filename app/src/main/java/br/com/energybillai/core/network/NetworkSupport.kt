@@ -1,5 +1,6 @@
 package br.com.energybillai.core.network
 
+import br.com.energybillai.BuildConfig
 import br.com.energybillai.core.common.AppError
 import br.com.energybillai.core.common.AppResult
 import br.com.energybillai.data.local.SessionStore
@@ -134,40 +135,69 @@ suspend fun <T> safeApiCall(
 private fun mapNetworkError(exception: IOException): AppError {
     val rawMessage = exception.message.orEmpty()
     val normalizedMessage = rawMessage.lowercase()
+    val isProduction = BuildConfig.API_ENVIRONMENT.equals("production", ignoreCase = true)
     return when {
         exception is SocketTimeoutException -> AppError(
             code = "network_timeout",
-            message = "Tempo de resposta excedido. Verifique se o backend esta ativo e tente novamente.",
+            message = if (isProduction) {
+                "Conectando ao servidor. A primeira requisicao pode levar alguns segundos. Tente novamente em instantes."
+            } else {
+                "Tempo de resposta excedido. Verifique se o backend esta ativo e tente novamente."
+            },
         )
 
         exception is UnknownHostException -> AppError(
             code = "network_unknown_host",
-            message = "Servidor nao encontrado. Verifique o IP configurado e se o tablet esta na mesma rede Wi-Fi.",
+            message = if (isProduction) {
+                "Nao foi possivel localizar o servidor. Verifique sua conexao com a internet e tente novamente."
+            } else {
+                "Servidor nao encontrado. Verifique o IP configurado e se o tablet esta na mesma rede Wi-Fi."
+            },
         )
 
         exception is NoRouteToHostException -> AppError(
             code = "network_no_route",
-            message = "Nao ha rota ate o backend. Confirme se o tablet e o computador estao na mesma rede.",
+            message = if (isProduction) {
+                "Nao foi possivel alcancar o servidor. Confira sua conexao com a internet e tente novamente."
+            } else {
+                "Nao ha rota ate o backend. Confirme se o tablet e o computador estao na mesma rede."
+            },
         )
 
         exception is ConnectException -> AppError(
             code = "network_connection_refused",
-            message = "Nao foi possivel conectar ao backend. Verifique se o FastAPI esta rodando com --host 0.0.0.0 --port 8000 e se o firewall liberou a porta.",
+            message = if (isProduction) {
+                "Nao foi possivel conectar ao servidor. Tente novamente em instantes."
+            } else {
+                "Nao foi possivel conectar ao backend. Verifique se o FastAPI esta rodando com --host 0.0.0.0 --port 8000 e se o firewall liberou a porta."
+            },
         )
 
         exception is UnknownServiceException && normalizedMessage.contains("cleartext") -> AppError(
             code = "network_cleartext_blocked",
-            message = "O Android bloqueou HTTP sem criptografia. Verifique a configuracao de network security para o IP local.",
+            message = if (isProduction) {
+                "A conexao com o servidor falhou por configuracao de rede. Tente novamente."
+            } else {
+                "O Android bloqueou HTTP sem criptografia. Verifique a configuracao de network security para o IP local."
+            },
         )
 
         normalizedMessage.contains("failed to connect") -> AppError(
             code = "network_connection_failed",
-            message = "Falha ao conectar no backend. Confirme IP, porta 8000, firewall e se o servidor esta ligado.",
+            message = if (isProduction) {
+                "Nao foi possivel conectar ao servidor. Tente novamente."
+            } else {
+                "Falha ao conectar no backend. Confirme IP, porta 8000, firewall e se o servidor esta ligado."
+            },
         )
 
         else -> AppError(
             code = "network_error",
-            message = "Nao foi possivel conectar ao servidor. Verifique se o backend esta ativo e se o tablet esta na mesma rede.",
+            message = if (isProduction) {
+                "Nao foi possivel conectar ao servidor. Tente novamente."
+            } else {
+                "Nao foi possivel conectar ao servidor. Verifique se o backend esta ativo e se o tablet esta na mesma rede."
+            },
         )
     }
 }

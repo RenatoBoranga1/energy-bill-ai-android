@@ -31,7 +31,7 @@ class MeterReadingImageStore @Inject constructor(
                 AppResult.Error(
                     AppError(
                         code = "meter_reading_persist_image_error",
-                        message = "NÃ£o foi possÃ­vel preparar a imagem da leitura. Tente novamente com outra foto.",
+                        message = "Nao foi possivel preparar a imagem da leitura. Tente novamente com outra foto.",
                     ),
                 )
             },

@@ -84,7 +84,7 @@ fun ProfileScreen(
                 }
                 AppCard(
                     title = "Leitura semanal do medidor",
-                    eyebrow = "Energy Game",
+                    eyebrow = "Desafios",
                     supporting = "Registre a leitura real do medidor para acompanhar o consumo semanal, atualizar desafios e medir a economia com mais precisão.",
                 ) {
                     PrimaryActionButton(

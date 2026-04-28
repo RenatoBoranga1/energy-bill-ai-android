@@ -33,8 +33,11 @@ import br.com.energybillai.core.ui.toKwhLabel
 import br.com.energybillai.core.ui.toMonthLabel
 import br.com.energybillai.core.ui.toTrendLabel
 import br.com.energybillai.core.ui.toUiLabel
+import br.com.energybillai.domain.game.model.EnergyChallengeStatus
 import br.com.energybillai.domain.game.model.GameProgress
-import br.com.energybillai.domain.game.usecase.EnsureActiveChallengeUseCase
+import br.com.energybillai.domain.game.usecase.AcceptSuggestedChallengeUseCase
+import br.com.energybillai.domain.game.usecase.DeclineSuggestedChallengeUseCase
+import br.com.energybillai.domain.game.usecase.EnsureSuggestedChallengeUseCase
 import br.com.energybillai.domain.game.usecase.ObserveGameProgressUseCase
 import br.com.energybillai.domain.model.BillAnalytics
 import br.com.energybillai.domain.model.BillForecast
@@ -46,6 +49,8 @@ import br.com.energybillai.domain.usecase.ObserveHistoryUseCase
 import br.com.energybillai.domain.usecase.ObserveSessionUseCase
 import br.com.energybillai.domain.usecase.RefreshHistoryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,8 +79,10 @@ class DashboardViewModel @Inject constructor(
     private val refreshHistoryUseCase: RefreshHistoryUseCase,
     private val getAnalyticsUseCase: GetAnalyticsUseCase,
     private val getForecastUseCase: GetForecastUseCase,
+    private val acceptSuggestedChallengeUseCase: AcceptSuggestedChallengeUseCase,
+    private val declineSuggestedChallengeUseCase: DeclineSuggestedChallengeUseCase,
     private val observeGameProgressUseCase: ObserveGameProgressUseCase,
-    private val ensureActiveChallengeUseCase: EnsureActiveChallengeUseCase,
+    private val ensureSuggestedChallengeUseCase: EnsureSuggestedChallengeUseCase,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(DashboardUiState())
@@ -140,7 +147,7 @@ class DashboardViewModel @Inject constructor(
                     } else {
                         null
                     }
-                    ensureActiveChallengeUseCase(
+                    ensureSuggestedChallengeUseCase(
                         userId = userId,
                         history = bills,
                         forecast = forecast,
@@ -176,6 +183,32 @@ class DashboardViewModel @Inject constructor(
                     )
                 }
             }
+        }
+    }
+
+    fun acceptSuggestedChallenge() {
+        val userId = currentUserId ?: return
+        val challengeId = latestGameProgress?.suggestedChallenge?.id ?: return
+        viewModelScope.launch {
+            mutableState.value = mutableState.value.copy(isRefreshing = true)
+            acceptSuggestedChallengeUseCase(
+                userId = userId,
+                challengeId = challengeId,
+            )
+            mutableState.value = mutableState.value.copy(isRefreshing = false)
+        }
+    }
+
+    fun declineSuggestedChallenge() {
+        val userId = currentUserId ?: return
+        val challengeId = latestGameProgress?.suggestedChallenge?.id ?: return
+        viewModelScope.launch {
+            mutableState.value = mutableState.value.copy(isRefreshing = true)
+            declineSuggestedChallengeUseCase(
+                userId = userId,
+                challengeId = challengeId,
+            )
+            mutableState.value = mutableState.value.copy(isRefreshing = false)
         }
     }
 }
@@ -254,19 +287,37 @@ fun DashboardScreen(
                     )
                 }
                 content.data.gameProgress?.let { gameProgress ->
+                    val displayedChallenge = gameProgress.activeChallenge ?: gameProgress.suggestedChallenge
                     AppCard(
-                        title = "Desafio de economia",
-                        eyebrow = "Energy Game",
+                        title = if (gameProgress.activeChallenge != null) "Desafio de economia" else "Missao sugerida",
+                        eyebrow = "Desafios",
                         supporting = gameProgress.motivationalMessage
                             ?: "Use leituras semanais do medidor para acompanhar seu progresso com mais precisão.",
                     ) {
-                        gameProgress.activeChallenge?.let { challenge ->
+                        displayedChallenge?.let { challenge ->
                             MetricChip(
-                                label = "Desafio ativo",
-                                value = "${challenge.progressPercent.toInt()}%",
+                                label = if (challenge.status == EnergyChallengeStatus.SUGGESTED) "Sugestao" else "Desafio ativo",
+                                value = if (challenge.status == EnergyChallengeStatus.SUGGESTED) challenge.title else "${challenge.progressPercent.toInt()}%",
                                 supporting = challenge.title,
                                 highlighted = true,
                             )
+                            if (challenge.status == EnergyChallengeStatus.SUGGESTED) {
+                                Text(text = challenge.toSuggestionPitch())
+                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    MetricChip(
+                                        label = "Economia estimada",
+                                        value = challenge.toPotentialSavingsLabel(),
+                                        modifier = Modifier.weight(1f),
+                                        supporting = challenge.toPrimaryGoalLabel(),
+                                    )
+                                    MetricChip(
+                                        label = "Prazo",
+                                        value = challenge.toRemainingDaysLabel(),
+                                        modifier = Modifier.weight(1f),
+                                        supporting = "${challenge.rewardXp} XP de recompensa",
+                                    )
+                                }
+                            }
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             MetricChip(
@@ -288,11 +339,33 @@ fun DashboardScreen(
                                 onClick = onOpenMeterReading,
                             )
                         }
+                        if (gameProgress.suggestedChallenge != null) {
+                            PrimaryActionButton(
+                                text = "Aceitar desafio",
+                                onClick = viewModel::acceptSuggestedChallenge,
+                                enabled = !state.isRefreshing,
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                TextButton(
+                                    onClick = onOpenEnergyGame,
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text("Ver simulacao")
+                                }
+                                TextButton(
+                                    onClick = viewModel::declineSuggestedChallenge,
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !state.isRefreshing,
+                                ) {
+                                    Text("Agora nao")
+                                }
+                            }
+                        }
                         TextButton(
                             onClick = onOpenEnergyGame,
                             modifier = Modifier.align(Alignment.CenterHorizontally),
                         ) {
-                            Text("Abrir painel do jogo")
+                            Text("Abrir central de desafios")
                         }
                     }
                 }
@@ -409,5 +482,40 @@ fun DashboardScreen(
             }
             UiState.Idle -> Unit
         }
+    }
+}
+
+private fun br.com.energybillai.domain.game.model.EnergyChallenge.toSuggestionPitch(): String {
+    return when {
+        targetBrl != null && targetKwh != null ->
+            "Voce pode economizar ${targetBrl.toCurrencyLabel()} neste ciclo se reduzir cerca de ${targetKwh.toKwhLabel()}."
+        targetBrl != null ->
+            "Existe chance de aliviar a conta em cerca de ${targetBrl.toCurrencyLabel()} neste ciclo."
+        targetKwh != null ->
+            "A meta sugerida para este ciclo e tirar ${targetKwh.toKwhLabel()} do consumo previsto."
+        else ->
+            description
+    }
+}
+
+private fun br.com.energybillai.domain.game.model.EnergyChallenge.toPotentialSavingsLabel(): String {
+    return targetBrl?.toCurrencyLabel() ?: "Em definicao"
+}
+
+private fun br.com.energybillai.domain.game.model.EnergyChallenge.toPrimaryGoalLabel(): String {
+    return when {
+        targetKwh != null -> targetKwh.toKwhLabel()
+        targetBrl != null -> targetBrl.toCurrencyLabel()
+        else -> title
+    }
+}
+
+private fun br.com.energybillai.domain.game.model.EnergyChallenge.toRemainingDaysLabel(today: LocalDate = LocalDate.now()): String {
+    val parsedEndDate = runCatching { LocalDate.parse(endDate.take(10)) }.getOrNull() ?: return "Prazo indefinido"
+    val remainingDays = ChronoUnit.DAYS.between(today, parsedEndDate).coerceAtLeast(0)
+    return when (remainingDays) {
+        0L -> "Ultimo dia"
+        1L -> "1 dia"
+        else -> "$remainingDays dias"
     }
 }

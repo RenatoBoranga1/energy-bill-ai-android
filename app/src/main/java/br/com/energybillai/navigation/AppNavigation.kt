@@ -54,15 +54,19 @@ sealed class AppRoute(val route: String) {
     data object BillDetail : AppRoute("bill/{billId}") {
         fun create(billId: String): String = "bill/$billId"
     }
+
     data object Review : AppRoute("review/{billId}") {
         fun create(billId: String): String = "review/$billId"
     }
+
     data object Analytics : AppRoute("analytics/{billId}") {
         fun create(billId: String): String = "analytics/$billId"
     }
+
     data object Forecast : AppRoute("forecast/{billId}") {
         fun create(billId: String): String = "forecast/$billId"
     }
+
     data object EnergyGame : AppRoute("energy-game")
     data object MeterReadingCapture : AppRoute("meter-reading/capture")
     data object MeterReadingReview : AppRoute("meter-reading/review/{draftId}") {
@@ -77,10 +81,10 @@ private data class BottomDestination(
 )
 
 private val bottomDestinations = listOf(
-    BottomDestination(AppRoute.Dashboard.route, "Início", Icons.Outlined.BarChart),
+    BottomDestination(AppRoute.Dashboard.route, "Inicio", Icons.Outlined.BarChart),
     BottomDestination(AppRoute.Upload.route, "Enviar", Icons.Outlined.AddCircleOutline),
-    BottomDestination(AppRoute.EnergyGame.route, "Jogo", Icons.Outlined.Bolt),
-    BottomDestination(AppRoute.History.route, "Histórico", Icons.Outlined.History),
+    BottomDestination(AppRoute.EnergyGame.route, "Desafios", Icons.Outlined.Bolt),
+    BottomDestination(AppRoute.History.route, "Historico", Icons.Outlined.History),
     BottomDestination(AppRoute.Profile.route, "Perfil", Icons.Outlined.AccountCircle),
 )
 
@@ -117,7 +121,7 @@ fun EnergyBillRoot(
         if (state.isLoading) {
             LoadingPane(
                 title = "Preparando seu painel",
-                message = "Validando sua sessão e conectando os dados com segurança.",
+                message = "Validando sua sessao e conectando os dados com seguranca.",
             )
         } else if (state.isAuthenticated) {
             AuthenticatedNavHost()
@@ -156,9 +160,7 @@ private fun AuthenticatedNavHost() {
                         val selected = destination?.hierarchy?.any { it.route == item.route } == true
                         NavigationBarItem(
                             selected = selected,
-                            onClick = {
-                                navController.navigateToTopLevel(item.route)
-                            },
+                            onClick = { navController.navigateToTopLevel(item.route) },
                             icon = { Icon(item.icon, contentDescription = item.label) },
                             label = { Text(item.label) },
                         )
@@ -255,7 +257,7 @@ private fun AuthenticatedNavHost() {
                 MeterReadingReviewScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onRetakePhoto = { navController.popBackStack() },
-                    onDone = { navController.navigateToTopLevel(AppRoute.Profile.route) },
+                    onDone = { navController.navigateToTopLevel(AppRoute.EnergyGame.route) },
                 )
             }
         }

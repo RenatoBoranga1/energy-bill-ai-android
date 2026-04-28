@@ -7,7 +7,8 @@ plugins {
 
 import java.net.URI
 
-val localApiBaseUrl = "http://192.168.31.19:8000/"
+val productionApiBaseUrl = "https://energy-bill-ai-backend.onrender.com/"
+val documentedLocalDebugApiBaseUrl = "http://192.168.31.19:8000/"
 
 fun escapeBuildConfigString(value: String): String = value
     .replace("\\", "\\\\")
@@ -56,18 +57,27 @@ fun resolveBooleanProperty(
     }
 }
 
-val configuredApiBaseUrl = providers.gradleProperty("API_BASE_URL")
+val requestedApiBaseUrl = providers.gradleProperty("API_BASE_URL")
     .orElse(providers.environmentVariable("API_BASE_URL"))
-    .orElse(localApiBaseUrl)
-    .map(::normalizeApiBaseUrl)
-    .get()
+    .orNull
+    ?.let(::normalizeApiBaseUrl)
 
-val configuredApiEnvironment = providers.gradleProperty("API_ENVIRONMENT")
+val requestedApiEnvironment = providers.gradleProperty("API_ENVIRONMENT")
     .orElse(providers.environmentVariable("API_ENVIRONMENT"))
-    .orElse("local")
-    .get()
+    .orNull
 
-validateApiBaseUrl(configuredApiBaseUrl, configuredApiEnvironment)
+val debugApiBaseUrl = requestedApiBaseUrl ?: productionApiBaseUrl
+val debugApiEnvironment = requestedApiEnvironment ?: "production"
+val releaseApiBaseUrl = when {
+    requestedApiEnvironment?.trim()?.equals("production", ignoreCase = true) == true &&
+        !requestedApiBaseUrl.isNullOrBlank() -> requestedApiBaseUrl
+    else -> productionApiBaseUrl
+}
+val releaseApiEnvironment = "production"
+val debugUsesCleartextTraffic = URI(debugApiBaseUrl).scheme.equals("http", ignoreCase = true)
+
+validateApiBaseUrl(debugApiBaseUrl, debugApiEnvironment)
+validateApiBaseUrl(releaseApiBaseUrl, releaseApiEnvironment)
 
 val configuredSkipLoginOverride = providers.gradleProperty("SKIP_LOGIN_FOR_DEV")
     .orElse(providers.environmentVariable("SKIP_LOGIN_FOR_DEV"))
@@ -89,32 +99,37 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "API_BASE_URL", "\"${escapeBuildConfigString(configuredApiBaseUrl)}\"")
-        buildConfigField("String", "API_ENVIRONMENT", "\"${escapeBuildConfigString(configuredApiEnvironment)}\"")
-        buildConfigField("int", "API_CONNECT_TIMEOUT_SECONDS", "20")
-        buildConfigField("int", "API_READ_TIMEOUT_SECONDS", "60")
+        buildConfigField("String", "API_BASE_URL", "\"${escapeBuildConfigString(productionApiBaseUrl)}\"")
+        buildConfigField("String", "API_ENVIRONMENT", "\"production\"")
+        buildConfigField("int", "API_CONNECT_TIMEOUT_SECONDS", "30")
+        buildConfigField("int", "API_READ_TIMEOUT_SECONDS", "90")
         buildConfigField("int", "API_WRITE_TIMEOUT_SECONDS", "90")
-        manifestPlaceholders["usesCleartextTraffic"] = "true"
+        manifestPlaceholders["usesCleartextTraffic"] = "false"
     }
 
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            buildConfigField("String", "API_BASE_URL", "\"${escapeBuildConfigString(debugApiBaseUrl)}\"")
+            buildConfigField("String", "API_ENVIRONMENT", "\"${escapeBuildConfigString(debugApiEnvironment)}\"")
             buildConfigField(
                 "boolean",
                 "SKIP_LOGIN_FOR_DEV",
                 resolveBooleanProperty(configuredSkipLoginOverride, false).toString(),
             )
+            manifestPlaceholders["usesCleartextTraffic"] = debugUsesCleartextTraffic.toString()
         }
 
         release {
             isMinifyEnabled = false
+            buildConfigField("String", "API_BASE_URL", "\"${escapeBuildConfigString(releaseApiBaseUrl)}\"")
+            buildConfigField("String", "API_ENVIRONMENT", "\"production\"")
             manifestPlaceholders["usesCleartextTraffic"] = "false"
             buildConfigField(
                 "boolean",
                 "SKIP_LOGIN_FOR_DEV",
-                resolveBooleanProperty(configuredSkipLoginOverride, false).toString(),
+                "false",
             )
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -192,6 +207,9 @@ dependencies {
     implementation("androidx.camera:camera-view:1.3.4")
     implementation("com.google.mlkit:text-recognition:16.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    kapt("androidx.hilt:hilt-compiler:1.2.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.4.2")

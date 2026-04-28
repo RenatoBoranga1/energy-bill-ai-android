@@ -2,6 +2,8 @@ package br.com.energybillai
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import br.com.energybillai.domain.game.usecase.CancelGameRemindersUseCase
+import br.com.energybillai.domain.game.usecase.EnsureGameRemindersUseCase
 import br.com.energybillai.domain.usecase.BootstrapSessionUseCase
 import br.com.energybillai.domain.usecase.ObserveSessionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,6 +22,8 @@ data class AppEntryState(
 class AppEntryViewModel @Inject constructor(
     observeSessionUseCase: ObserveSessionUseCase,
     private val bootstrapSessionUseCase: BootstrapSessionUseCase,
+    private val ensureGameRemindersUseCase: EnsureGameRemindersUseCase,
+    private val cancelGameRemindersUseCase: CancelGameRemindersUseCase,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(AppEntryState())
     val state = mutableState.asStateFlow()
@@ -31,6 +35,11 @@ class AppEntryViewModel @Inject constructor(
             viewModelScope.launch {
                 bootstrapSessionUseCase()
                 observeSessionUseCase().collectLatest { session ->
+                    if (session != null) {
+                        ensureGameRemindersUseCase()
+                    } else {
+                        cancelGameRemindersUseCase()
+                    }
                     mutableState.value = AppEntryState(
                         isLoading = false,
                         isAuthenticated = session != null,

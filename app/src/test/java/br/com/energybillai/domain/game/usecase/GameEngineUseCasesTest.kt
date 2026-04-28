@@ -128,7 +128,7 @@ class GameEngineUseCasesTest {
 
         assertThat(result.isAccepted).isTrue()
         assertThat(result.isSuspicious).isTrue()
-        assertThat(result.warningMessage).contains("acima do padrão")
+        assertThat(result.warningMessage).contains("acima do padrao")
     }
 
     @Test
@@ -172,6 +172,7 @@ class GameEngineUseCasesTest {
             today = LocalDate.parse("2026-04-24"),
         )
 
+        assertThat(challenge.status).isEqualTo(EnergyChallengeStatus.SUGGESTED)
         assertThat(challenge.type).isEqualTo(EnergyChallengeType.STAY_BELOW_FORECAST)
         assertThat(challenge.rewardXp).isEqualTo(150)
         assertThat(challenge.targetKwh).isGreaterThan(0.0)
@@ -391,6 +392,177 @@ class GameEngineUseCasesTest {
         assertThat(progress.motivationalMessage).contains("pendente")
     }
 
+    @Test
+    fun `observe game progress exposes suggested challenge before acceptance`() = runTest {
+        val gameRepository = FakeGameRepository()
+        val meterReadingRepository = FakeMeterReadingRepository()
+        val observeGameProgressUseCase = ObserveGameProgressUseCase(
+            gameRepository = gameRepository,
+            meterReadingRepository = meterReadingRepository,
+        )
+
+        gameRepository.upsertChallenge(
+            challenge(status = EnergyChallengeStatus.SUGGESTED),
+        )
+
+        val progress = observeGameProgressUseCase("user").first()
+
+        assertThat(progress.suggestedChallenge?.status).isEqualTo(EnergyChallengeStatus.SUGGESTED)
+        assertThat(progress.activeChallenge).isNull()
+        assertThat(progress.motivationalMessage).contains("oportunidade")
+    }
+
+    @Test
+    fun `accept suggested challenge promotes mission to active`() = runTest {
+        val gameRepository = FakeGameRepository()
+        val meterReadingRepository = FakeMeterReadingRepository()
+        val gameEngine = GameEngine(
+            gameRepository = gameRepository,
+            meterReadingRepository = meterReadingRepository,
+            challengeGenerator = ChallengeGenerator(calculator),
+            progressTracker = ProgressTracker(calculator),
+            rewardSystem = RewardSystem(),
+            userScoreManager = UserScoreManager(),
+            energySavingsCalculator = calculator,
+            meterReadingValidator = MeterReadingValidator(),
+        )
+        val acceptSuggestedChallengeUseCase = AcceptSuggestedChallengeUseCase(gameEngine)
+        val suggestedChallenge = challenge(status = EnergyChallengeStatus.SUGGESTED)
+
+        gameRepository.upsertChallenge(suggestedChallenge)
+
+        val acceptedChallenge = acceptSuggestedChallengeUseCase(
+            userId = "user",
+            challengeId = suggestedChallenge.id,
+            today = LocalDate.parse("2026-04-24"),
+        )
+
+        val progress = ObserveGameProgressUseCase(
+            gameRepository = gameRepository,
+            meterReadingRepository = meterReadingRepository,
+        )("user").first()
+
+        assertThat(acceptedChallenge?.status).isEqualTo(EnergyChallengeStatus.ACTIVE)
+        assertThat(progress.suggestedChallenge).isNull()
+        assertThat(progress.activeChallenge?.status).isEqualTo(EnergyChallengeStatus.ACTIVE)
+    }
+
+    @Test
+    fun `decline suggested challenge hides mission from current cycle`() = runTest {
+        val gameRepository = FakeGameRepository()
+        val meterReadingRepository = FakeMeterReadingRepository()
+        val gameEngine = GameEngine(
+            gameRepository = gameRepository,
+            meterReadingRepository = meterReadingRepository,
+            challengeGenerator = ChallengeGenerator(calculator),
+            progressTracker = ProgressTracker(calculator),
+            rewardSystem = RewardSystem(),
+            userScoreManager = UserScoreManager(),
+            energySavingsCalculator = calculator,
+            meterReadingValidator = MeterReadingValidator(),
+        )
+        val declineSuggestedChallengeUseCase = DeclineSuggestedChallengeUseCase(gameEngine)
+        val suggestedChallenge = challenge(status = EnergyChallengeStatus.SUGGESTED)
+
+        gameRepository.upsertChallenge(suggestedChallenge)
+        declineSuggestedChallengeUseCase(
+            userId = "user",
+            challengeId = suggestedChallenge.id,
+        )
+
+        val progress = ObserveGameProgressUseCase(
+            gameRepository = gameRepository,
+            meterReadingRepository = meterReadingRepository,
+        )("user").first()
+
+        assertThat(progress.suggestedChallenge).isNull()
+        assertThat(gameRepository.getChallengeById(suggestedChallenge.id)?.status)
+            .isEqualTo(EnergyChallengeStatus.CANCELED)
+    }
+
+    @Test
+    fun `process meter reading auto accepts suggested challenge as fallback`() = runTest {
+        val gameRepository = FakeGameRepository()
+        val meterReadingRepository = FakeMeterReadingRepository()
+        val gameEngine = GameEngine(
+            gameRepository = gameRepository,
+            meterReadingRepository = meterReadingRepository,
+            challengeGenerator = ChallengeGenerator(calculator),
+            progressTracker = ProgressTracker(calculator),
+            rewardSystem = RewardSystem(),
+            userScoreManager = UserScoreManager(),
+            energySavingsCalculator = calculator,
+            meterReadingValidator = MeterReadingValidator(),
+        )
+        val history = listOf(
+            billSummary(month = "2026-04", consumption = 252.0, total = 228.15),
+        )
+
+        val suggested = gameEngine.ensureSuggestedChallenge(
+            userId = "user",
+            history = history,
+            forecast = null,
+            today = LocalDate.parse("2026-04-24"),
+        )
+
+        assertThat(suggested.status).isEqualTo(EnergyChallengeStatus.SUGGESTED)
+
+        val result = gameEngine.processConfirmedReading(
+            userId = "user",
+            readingDate = LocalDate.parse("2026-04-24"),
+            confirmedValue = 18234,
+            imageUri = "file:///meter.jpg",
+            extractedOcrValue = 18230,
+            confidenceScore = 0.82,
+            observation = null,
+            history = history,
+            forecast = null,
+        )
+
+        val success = result as AppResult.Success
+        assertThat(success.data.activeChallenge?.status).isEqualTo(EnergyChallengeStatus.ACTIVE)
+    }
+
+    @Test
+    fun `ensure suggested challenge respects dismissed challenge during same cycle`() = runTest {
+        val gameRepository = FakeGameRepository()
+        val meterReadingRepository = FakeMeterReadingRepository()
+        val gameEngine = GameEngine(
+            gameRepository = gameRepository,
+            meterReadingRepository = meterReadingRepository,
+            challengeGenerator = ChallengeGenerator(calculator),
+            progressTracker = ProgressTracker(calculator),
+            rewardSystem = RewardSystem(),
+            userScoreManager = UserScoreManager(),
+            energySavingsCalculator = calculator,
+            meterReadingValidator = MeterReadingValidator(),
+        )
+        val history = listOf(
+            billSummary(month = "2026-04", consumption = 252.0, total = 228.15),
+        )
+
+        val suggested = gameEngine.ensureSuggestedChallenge(
+            userId = "user",
+            history = history,
+            forecast = null,
+            today = LocalDate.parse("2026-04-24"),
+        )
+        gameEngine.declineSuggestedChallenge(
+            userId = "user",
+            challengeId = suggested.id,
+        )
+
+        val afterDecline = gameEngine.ensureSuggestedChallenge(
+            userId = "user",
+            history = history,
+            forecast = null,
+            today = LocalDate.parse("2026-04-24"),
+        )
+
+        assertThat(afterDecline.id).isEqualTo(suggested.id)
+        assertThat(afterDecline.status).isEqualTo(EnergyChallengeStatus.CANCELED)
+    }
+
     private fun billSummary(month: String, consumption: Double, total: Double): BillSummary {
         return BillSummary(
             billId = month,
@@ -434,30 +606,75 @@ class GameEngineUseCasesTest {
     }
 
     private class FakeGameRepository : GameRepository {
-        private val activeChallenge = MutableStateFlow<EnergyChallenge?>(null)
+        private val challenges = MutableStateFlow<List<EnergyChallenge>>(emptyList())
         private val userScores = MutableStateFlow<Map<String, UserScore>>(emptyMap())
         private val achievements = MutableStateFlow<Map<String, List<Achievement>>>(emptyMap())
 
-        override fun observeActiveChallenge(userId: String): Flow<EnergyChallenge?> = activeChallenge
+        override fun observeSuggestedChallenge(userId: String): Flow<EnergyChallenge?> {
+            return challenges.map { items ->
+                items.filter { it.userId == userId }
+                    .filter { it.status == EnergyChallengeStatus.SUGGESTED }
+                    .maxByOrNull { it.updatedAt }
+            }
+        }
+
+        override fun observeActiveChallenge(userId: String): Flow<EnergyChallenge?> {
+            return challenges.map { items ->
+                items.filter { it.userId == userId }
+                    .filter { it.status == EnergyChallengeStatus.ACTIVE }
+                    .maxByOrNull { it.updatedAt }
+            }
+        }
 
         override fun observeChallenges(userId: String): Flow<List<EnergyChallenge>> {
-            return activeChallenge.map { challenge -> listOfNotNull(challenge) }
+            return challenges.map { items ->
+                items.filter { it.userId == userId }
+            }
         }
 
         override suspend fun getChallengeById(challengeId: String): EnergyChallenge? {
-            return activeChallenge.value?.takeIf { it.id == challengeId }
+            return challenges.value.firstOrNull { it.id == challengeId }
         }
 
         override suspend fun upsertChallenge(challenge: EnergyChallenge) {
-            activeChallenge.value = challenge
+            challenges.value = challenges.value
+                .filterNot { it.id == challenge.id } + challenge
+        }
+
+        override suspend fun acceptSuggestedChallenge(challengeId: String) {
+            challenges.value = challenges.value.map { challenge ->
+                if (challenge.id == challengeId && challenge.status == EnergyChallengeStatus.SUGGESTED) {
+                    challenge.copy(status = EnergyChallengeStatus.ACTIVE)
+                } else {
+                    challenge
+                }
+            }
         }
 
         override suspend fun updateChallengeStatus(challengeId: String, status: EnergyChallengeStatus) {
-            activeChallenge.value = activeChallenge.value?.takeIf { it.id == challengeId }?.copy(status = status)
+            challenges.value = challenges.value.map { challenge ->
+                if (challenge.id == challengeId) challenge.copy(status = status) else challenge
+            }
+        }
+
+        override suspend fun clearSuggestedChallenges(userId: String) {
+            challenges.value = challenges.value.map { challenge ->
+                if (challenge.userId == userId && challenge.status == EnergyChallengeStatus.SUGGESTED) {
+                    challenge.copy(status = EnergyChallengeStatus.CANCELED)
+                } else {
+                    challenge
+                }
+            }
         }
 
         override suspend fun clearActiveChallenges(userId: String) {
-            activeChallenge.value = null
+            challenges.value = challenges.value.map { challenge ->
+                if (challenge.userId == userId && challenge.status == EnergyChallengeStatus.ACTIVE) {
+                    challenge.copy(status = EnergyChallengeStatus.CANCELED)
+                } else {
+                    challenge
+                }
+            }
         }
 
         override fun observeUserScore(userId: String): Flow<UserScore?> {

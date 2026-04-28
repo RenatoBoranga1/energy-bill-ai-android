@@ -93,6 +93,16 @@ interface EnergyChallengeDao {
     @Query(
         """
         SELECT * FROM energy_challenges
+        WHERE userId = :userId AND status = 'SUGGESTED'
+        ORDER BY updatedAt DESC
+        LIMIT 1
+        """,
+    )
+    fun observeSuggestedChallenge(userId: String): Flow<EnergyChallengeEntity?>
+
+    @Query(
+        """
+        SELECT * FROM energy_challenges
         WHERE userId = :userId AND status = 'ACTIVE'
         ORDER BY updatedAt DESC
         LIMIT 1
@@ -109,8 +119,20 @@ interface EnergyChallengeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(challenge: EnergyChallengeEntity)
 
+    @Query(
+        """
+        UPDATE energy_challenges
+        SET status = 'ACTIVE', updatedAt = :updatedAt
+        WHERE id = :challengeId AND status = 'SUGGESTED'
+        """,
+    )
+    suspend fun acceptSuggestedChallenge(challengeId: String, updatedAt: String)
+
     @Query("UPDATE energy_challenges SET status = :status, updatedAt = :updatedAt WHERE id = :challengeId")
     suspend fun updateStatus(challengeId: String, status: String, updatedAt: String)
+
+    @Query("UPDATE energy_challenges SET status = 'CANCELED', updatedAt = :updatedAt WHERE userId = :userId AND status = 'SUGGESTED'")
+    suspend fun clearSuggestedChallenges(userId: String, updatedAt: String)
 
     @Query("UPDATE energy_challenges SET status = 'CANCELED', updatedAt = :updatedAt WHERE userId = :userId AND status = 'ACTIVE'")
     suspend fun clearActiveChallenges(userId: String, updatedAt: String)

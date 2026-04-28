@@ -1,11 +1,18 @@
 package br.com.energybillai.feature.meterreading
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,6 +38,7 @@ import br.com.energybillai.core.designsystem.InlineWarning
 import br.com.energybillai.core.designsystem.LoadingPane
 import br.com.energybillai.core.designsystem.MetricChip
 import br.com.energybillai.core.designsystem.PrimaryActionButton
+import br.com.energybillai.core.ocr.MeterReadingOcrCandidate
 import br.com.energybillai.core.ui.toCurrencyLabel
 import br.com.energybillai.core.ui.toKwhLabel
 import br.com.energybillai.data.local.game.MeterReadingDraft
@@ -82,14 +90,16 @@ class MeterReadingReviewViewModel @Inject constructor(
                 isLoading = false,
                 error = AppError(
                     code = "meter_reading_draft_missing",
-                    message = "A imagem temporária não foi encontrada. Faça uma nova leitura do medidor.",
+                    message = "A imagem temporaria nao foi encontrada. Faca uma nova leitura do medidor.",
                 ),
             )
         } else {
             MeterReadingReviewUiState(
                 isLoading = false,
                 draft = draft,
-                confirmedValue = draft.extractedValue?.toString().orEmpty(),
+                confirmedValue = draft.extractedValue?.toString()
+                    ?: draft.candidates.firstOrNull()?.value?.toString()
+                    .orEmpty(),
             )
         }
     }
@@ -99,6 +109,10 @@ class MeterReadingReviewViewModel @Inject constructor(
             confirmedValue = value.filter(Char::isDigit),
             error = null,
         )
+    }
+
+    fun pickCandidate(value: Long) {
+        updateConfirmedValue(value.toString())
     }
 
     fun updateNote(value: String) {
@@ -132,7 +146,7 @@ class MeterReadingReviewViewModel @Inject constructor(
             mutableState.value = currentState.copy(
                 error = AppError(
                     code = "meter_reading_auth_required",
-                    message = "Sua sessão não está disponível. Entre novamente para continuar.",
+                    message = "Sua sessao nao esta disponivel. Entre novamente para continuar.",
                 ),
             )
             return
@@ -197,7 +211,7 @@ fun MeterReadingReviewScreen(
             state.isLoading -> {
                 LoadingPane(
                     title = "Carregando leitura",
-                    message = "Preparando a imagem capturada para sua conferência final.",
+                    message = "Preparando a imagem capturada para sua conferencia final.",
                 )
             }
 
@@ -211,8 +225,8 @@ fun MeterReadingReviewScreen(
 
             draft == null -> {
                 EmptyStatePane(
-                    title = "Leitura não encontrada",
-                    message = state.error?.message ?: "Faça uma nova captura para continuar.",
+                    title = "Leitura nao encontrada",
+                    message = state.error?.message ?: "Faca uma nova captura para continuar.",
                 )
             }
 
@@ -224,6 +238,7 @@ fun MeterReadingReviewScreen(
                     isSaving = state.isSaving,
                     error = state.error,
                     onConfirmedValueChange = viewModel::updateConfirmedValue,
+                    onPickCandidate = viewModel::pickCandidate,
                     onNoteChange = viewModel::updateNote,
                     onConfirm = viewModel::confirmReading,
                     onRetakePhoto = {
@@ -237,6 +252,7 @@ fun MeterReadingReviewScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MeterReadingReviewContent(
     draft: MeterReadingDraft,
@@ -245,24 +261,25 @@ private fun MeterReadingReviewContent(
     isSaving: Boolean,
     error: AppError?,
     onConfirmedValueChange: (String) -> Unit,
+    onPickCandidate: (Long) -> Unit,
     onNoteChange: (String) -> Unit,
     onConfirm: () -> Unit,
     onRetakePhoto: () -> Unit,
     onDismissError: () -> Unit,
 ) {
     AppBrandLockup(
-        subtitle = "Confira a leitura do medidor antes de salvar. Nada é gravado automaticamente sem a sua revisão.",
+        subtitle = "Confira a leitura do medidor antes de salvar. Nada e gravado automaticamente sem a sua revisao.",
     )
     HeroCard(
-        eyebrow = "Confirmação",
+        eyebrow = "Confirmacao",
         title = "Revise a leitura detectada",
-        supporting = "Se o número estiver diferente do visor, ajuste manualmente. Essa confirmação é a base dos desafios e da economia estimada.",
+        supporting = "Se o numero estiver diferente do visor, ajuste manualmente. Essa confirmacao e a base dos desafios e da economia estimada.",
     )
 
     AppCard(
         title = "Imagem capturada",
-        eyebrow = "Prévia",
-        supporting = "Use a foto abaixo para comparar o valor do medidor com o campo editável.",
+        eyebrow = "Previa",
+        supporting = "Use a foto abaixo para comparar o valor do medidor com o campo editavel.",
     ) {
         AsyncImage(
             model = draft.imageUri,
@@ -275,25 +292,38 @@ private fun MeterReadingReviewContent(
 
     AppCard(
         title = "Leitura detectada",
-        eyebrow = "Leitura automática",
-        supporting = "O app faz uma sugestão inicial, mas a decisão final sempre é sua.",
+        eyebrow = "Leitura automatica",
+        supporting = "O app faz uma sugestao inicial, mas a decisao final sempre e sua.",
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            MetricChip(
-                label = "Sugestão",
-                value = draft.extractedValue?.toString() ?: "Não identificada",
-                highlighted = draft.extractedValue != null,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
         MetricChip(
-            label = "Confiança",
+            label = "Sugestao principal",
+            value = draft.extractedValue?.toString() ?: "Nao identificada",
+            highlighted = draft.extractedValue != null,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        MetricChip(
+            label = "Confianca",
             value = draft.confidenceScore.toConfidenceLabel(),
             supporting = draft.confidenceScore.toConfidenceSupporting(),
         )
+        if (draft.candidates.isNotEmpty()) {
+            Text(
+                text = "Sugestoes encontradas",
+                style = MaterialTheme.typography.titleSmall,
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                draft.candidates.forEach { candidate ->
+                    CandidateChip(
+                        candidate = candidate,
+                        isSelected = confirmedValue == candidate.value.toString(),
+                        onClick = { onPickCandidate(candidate.value) },
+                    )
+                }
+            }
+        }
         if (!draft.warningMessage.isNullOrBlank()) {
             InlineWarning(text = draft.warningMessage)
         }
@@ -301,7 +331,7 @@ private fun MeterReadingReviewContent(
 
     error?.let { currentError ->
         ErrorStatePane(
-            title = "Não foi possível salvar a leitura",
+            title = "Nao foi possivel salvar a leitura",
             message = currentError.message,
             onRetry = onDismissError,
         )
@@ -309,8 +339,8 @@ private fun MeterReadingReviewContent(
 
     AppCard(
         title = "Confirme os dados",
-        eyebrow = "Revisão final",
-        supporting = "A leitura confirmada será usada para calcular o consumo semanal, atualizar o desafio e registrar seu progresso.",
+        eyebrow = "Revisao final",
+        supporting = "A leitura confirmada sera usada para calcular o consumo semanal, atualizar o desafio e registrar seu progresso.",
     ) {
         AppTextField(
             value = confirmedValue,
@@ -319,14 +349,14 @@ private fun MeterReadingReviewContent(
             keyboardOptions = KeyboardOptions.Default.copy(
                 keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
             ),
-            supporting = "Digite apenas números, exatamente como aparecem no visor.",
+            supporting = "Digite apenas numeros, exatamente como aparecem no visor.",
         )
         AppTextField(
             value = note,
             onValueChange = onNoteChange,
-            label = "Observação (opcional)",
+            label = "Observacao (opcional)",
             singleLine = false,
-            supporting = "Use este campo para registrar algo fora do normal, como reflexo, visor danificado ou consumo atípico.",
+            supporting = "Use este campo para registrar algo fora do normal, como reflexo, visor danificado ou consumo atipico.",
         )
         PrimaryActionButton(
             text = "Salvar leitura semanal",
@@ -345,13 +375,52 @@ private fun MeterReadingReviewContent(
 }
 
 @Composable
+private fun CandidateChip(
+    candidate: MeterReadingOcrCandidate,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.clickable(onClick = onClick),
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(18.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .border(
+                    width = 1.dp,
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.26f)
+                    } else {
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f)
+                    },
+                    shape = RoundedCornerShape(18.dp),
+                )
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = candidate.value.toString(),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = candidate.confidenceScore.toShortConfidenceLabel(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
 private fun MeterReadingSavedContent(
     result: GameEngineResult,
     onCaptureAnother: () -> Unit,
     onDone: () -> Unit,
 ) {
     AppBrandLockup(
-        subtitle = "Leitura registrada com sucesso. O app já atualizou seu progresso de economia e seu histórico semanal.",
+        subtitle = "Leitura registrada com sucesso. O app ja atualizou seu progresso e sua economia estimada.",
     )
     HeroCard(
         eyebrow = "Tudo certo",
@@ -361,36 +430,26 @@ private fun MeterReadingSavedContent(
     AppCard(
         title = "Resumo da leitura",
         eyebrow = "Impacto imediato",
-        supporting = "Acompanhe como essa leitura mexeu com o seu desafio e com a sua evolução no app.",
+        supporting = "Acompanhe como essa leitura mexeu com o seu desafio e com a sua evolucao no app.",
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            MetricChip(
-                label = "XP ganho",
-                value = "${result.gainedXp} XP",
-                highlighted = result.gainedXp > 0,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
         MetricChip(
-            label = "Nível",
+            label = "XP ganho",
+            value = "${result.gainedXp} XP",
+            highlighted = result.gainedXp > 0,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        MetricChip(
+            label = "Nivel",
             value = result.userScore.levelName,
-            supporting = "Nível ${result.userScore.currentLevel}",
+            supporting = "Nivel ${result.userScore.currentLevel}",
         )
         result.weeklyConsumption?.let { weeklyConsumption ->
-            Row(
+            MetricChip(
+                label = "Consumo semanal",
+                value = weeklyConsumption.consumptionKwh.toKwhLabel(),
+                supporting = "Media de ${weeklyConsumption.averageDailyKwh.toKwhLabel()} por dia",
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                MetricChip(
-                    label = "Consumo semanal",
-                    value = weeklyConsumption.consumptionKwh.toKwhLabel(),
-                    supporting = "Média de ${weeklyConsumption.averageDailyKwh.toKwhLabel()} por dia",
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            )
             MetricChip(
                 label = "Custo estimado",
                 value = weeklyConsumption.estimatedCostBrl.toCurrencyLabel(),
@@ -400,7 +459,7 @@ private fun MeterReadingSavedContent(
             MetricChip(
                 label = "Economia estimada",
                 value = projection.estimatedMonthlySavingsBrl.toCurrencyLabel(),
-                supporting = "Cenário atual: ${projection.estimatedMonthlySavingsKwh.toKwhLabel()} de redução potencial no mês",
+                supporting = "Cenario atual: ${projection.estimatedMonthlySavingsKwh.toKwhLabel()} de reducao potencial no mes",
             )
         }
         result.activeChallenge?.let { challenge ->
@@ -418,41 +477,51 @@ private fun MeterReadingSavedContent(
             )
             result.unlockedAchievements.forEach { achievement ->
                 Text(
-                    text = "• ${achievement.title}: ${achievement.description}",
+                    text = "- ${achievement.title}: ${achievement.description}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
-    }
-    PrimaryActionButton(
-        text = "Registrar outra leitura",
-        onClick = onCaptureAnother,
-    )
-    TextButton(
-        onClick = onDone,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text("Voltar ao app")
+        PrimaryActionButton(
+            text = "Voltar aos desafios",
+            onClick = onDone,
+        )
+        TextButton(
+            onClick = onCaptureAnother,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Text("Registrar nova leitura")
+        }
     }
 }
 
 private fun Double?.toConfidenceLabel(): String {
     return when {
-        this == null -> "Manual"
-        this >= 0.85 -> "Alta"
-        this >= 0.60 -> "Média"
+        this == null -> "Nao identificada"
+        this >= 0.82 -> "Alta"
+        this >= 0.60 -> "Boa"
         this > 0.0 -> "Baixa"
-        else -> "Não identificada"
+        else -> "Nao identificada"
+    }
+}
+
+private fun Double?.toShortConfidenceLabel(): String {
+    return when {
+        this == null -> "sem score"
+        this >= 0.82 -> "alta"
+        this >= 0.60 -> "boa"
+        this > 0.0 -> "baixa"
+        else -> "baixa"
     }
 }
 
 private fun Double?.toConfidenceSupporting(): String {
     return when {
-        this == null -> "Sem leitura automática"
-        this >= 0.85 -> "Os números parecem bem nítidos"
-        this >= 0.60 -> "Vale conferir antes de salvar"
-        this > 0.0 -> "Revisão manual recomendada"
-        else -> "Digite a leitura manualmente"
+        this == null -> "Preencha a leitura manualmente."
+        this >= 0.82 -> "A sugestao parece consistente com a foto capturada."
+        this >= 0.60 -> "Vale conferir os digitos antes de salvar."
+        this > 0.0 -> "Revisao manual recomendada."
+        else -> "Preencha a leitura manualmente."
     }
 }

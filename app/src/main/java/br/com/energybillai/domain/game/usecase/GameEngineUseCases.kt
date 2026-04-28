@@ -98,7 +98,7 @@ class MeterReadingValidator @Inject constructor() {
                 isAccepted = false,
                 isInitialReading = previousReading == null,
                 isSuspicious = false,
-                blockingMessage = "A leitura confirmada não pode ser negativa.",
+                blockingMessage = "A leitura confirmada nao pode ser negativa.",
                 previousReading = previousReading,
             )
         }
@@ -108,7 +108,7 @@ class MeterReadingValidator @Inject constructor() {
                 isAccepted = true,
                 isInitialReading = true,
                 isSuspicious = false,
-                warningMessage = "Esta será usada como leitura inicial. O consumo semanal será calculado a partir da próxima leitura.",
+                warningMessage = "Esta sera usada como leitura inicial. O consumo semanal sera calculado a partir da proxima leitura.",
             )
         }
 
@@ -116,7 +116,7 @@ class MeterReadingValidator @Inject constructor() {
             isAccepted = false,
             isInitialReading = false,
             isSuspicious = false,
-            blockingMessage = "Não foi possível validar a nova leitura com a anterior salva.",
+            blockingMessage = "Nao foi possivel validar a nova leitura com a anterior salva.",
             previousReading = previousReading,
         )
 
@@ -126,7 +126,7 @@ class MeterReadingValidator @Inject constructor() {
                 isAccepted = false,
                 isInitialReading = false,
                 isSuspicious = false,
-                blockingMessage = "A nova leitura precisa ter data posterior à leitura anterior.",
+                blockingMessage = "A nova leitura precisa ter data posterior a leitura anterior.",
                 previousReading = previousReading,
             )
         }
@@ -137,7 +137,7 @@ class MeterReadingValidator @Inject constructor() {
                 isAccepted = false,
                 isInitialReading = false,
                 isSuspicious = true,
-                blockingMessage = "A leitura confirmada ficou menor que a anterior. Revise o número do medidor antes de salvar.",
+                blockingMessage = "A leitura confirmada ficou menor que a anterior. Revise o numero do medidor antes de salvar.",
                 previousReading = previousReading,
             )
         }
@@ -151,8 +151,8 @@ class MeterReadingValidator @Inject constructor() {
             else -> false
         }
         val warning = when {
-            suspicious -> "Essa leitura gerou um consumo acima do padrão esperado. Vale conferir o número do medidor antes de confirmar."
-            avgDaily > 18.0 -> "O consumo diário desta leitura ficou elevado. O app vai acompanhar esse comportamento nas próximas semanas."
+            suspicious -> "Essa leitura gerou um consumo acima do padrao esperado. Vale conferir o numero do medidor antes de confirmar."
+            avgDaily > 18.0 -> "O consumo diario desta leitura ficou elevado. O app vai acompanhar esse comportamento nas proximas semanas."
             else -> null
         }
 
@@ -235,26 +235,26 @@ class ChallengeGenerator @Inject constructor(
         }
         val title = when (type) {
             EnergyChallengeType.REDUCE_DAILY_KWH -> "Reduza 1 kWh por dia"
-            EnergyChallengeType.REDUCE_VS_PREVIOUS_MONTH -> "Fique 5% abaixo do mês anterior"
-            EnergyChallengeType.STAY_BELOW_FORECAST -> "Fique abaixo da previsão"
+            EnergyChallengeType.REDUCE_VS_PREVIOUS_MONTH -> "Fique 5% abaixo do mes anterior"
+            EnergyChallengeType.STAY_BELOW_FORECAST -> "Fique abaixo da previsao"
             EnergyChallengeType.REDUCE_WEEKLY_CONSUMPTION -> "Controle o consumo desta semana"
             EnergyChallengeType.SAVE_TARGET_BRL -> "Economize em reais neste ciclo"
         }
         val description = when (type) {
             EnergyChallengeType.REDUCE_DAILY_KWH -> {
-                "Se você reduzir cerca de 1 kWh por dia até ${endDate.toPtBr()}, a próxima conta tende a aliviar."
+                "Se voce reduzir cerca de 1 kWh por dia ate ${endDate.toPtBr()}, a proxima conta tende a aliviar."
             }
             EnergyChallengeType.REDUCE_VS_PREVIOUS_MONTH -> {
-                "Seu consumo recente subiu. O desafio agora é fechar o período atual pelo menos 5% abaixo do mês anterior."
+                "Seu consumo recente subiu. O desafio agora e fechar o periodo atual pelo menos 5% abaixo do mes anterior."
             }
             EnergyChallengeType.STAY_BELOW_FORECAST -> {
-                "A previsão aponta pressão de alta. O objetivo é manter o consumo abaixo do cenário previsto para o fechamento do mês."
+                "A previsao aponta pressao de alta. O objetivo e manter o consumo abaixo do cenario previsto para o fechamento do mes."
             }
             EnergyChallengeType.REDUCE_WEEKLY_CONSUMPTION -> {
-                "Nesta semana, tente consumir menos do que seu padrão recente para começar a construir economia real."
+                "Nesta semana, tente consumir menos do que seu padrao recente para comecar a construir economia real."
             }
             EnergyChallengeType.SAVE_TARGET_BRL -> {
-                "Seu objetivo é aliviar a conta em reais até o fechamento do ciclo, mantendo o consumo dentro de uma faixa mais eficiente."
+                "Seu objetivo e aliviar a conta em reais ate o fechamento do ciclo, mantendo o consumo dentro de uma faixa mais eficiente."
             }
         }
 
@@ -268,7 +268,7 @@ class ChallengeGenerator @Inject constructor(
             targetBrl = targetBrl,
             startDate = startDate.toString(),
             endDate = endDate.toString(),
-            status = EnergyChallengeStatus.ACTIVE,
+            status = EnergyChallengeStatus.SUGGESTED,
             progressPercent = 0.0,
             rewardXp = if (monthChallenge) 150 else 50,
             baselineConsumptionKwh = baselineConsumption,
@@ -370,9 +370,9 @@ class ProgressTracker @Inject constructor(
         }
 
         val progressMessage = when {
-            updatedChallenge.status == EnergyChallengeStatus.COMPLETED -> "Boa! Você concluiu o desafio e já consolidou economia real no período."
-            savedThisPeriod != null && savedThisPeriod > 0 -> "Boa! Esta leitura ficou abaixo da referência esperada e avançou o desafio."
-            savedThisPeriod != null && savedThisPeriod < 0 -> "Nesta leitura o consumo passou do alvo. Ainda dá tempo de recuperar o ritmo nas próximas semanas."
+            updatedChallenge.status == EnergyChallengeStatus.COMPLETED -> "Boa! Voce concluiu o desafio e ja consolidou economia real no periodo."
+            savedThisPeriod != null && savedThisPeriod > 0 -> "Boa! Esta leitura ficou abaixo da referencia esperada e avancou o desafio."
+            savedThisPeriod != null && savedThisPeriod < 0 -> "Nesta leitura o consumo passou do alvo. Ainda da tempo de recuperar o ritmo nas proximas semanas."
             else -> "Leitura salva. O app vai continuar acompanhando sua meta."
         }
 
@@ -502,21 +502,21 @@ class RewardSystem @Inject constructor() {
             unlock(
                 type = AchievementType.FIRST_SAVINGS,
                 title = "Primeira economia",
-                description = "Você já conseguiu ficar abaixo da referência e começou a gerar economia real.",
+                description = "Voce ja conseguiu ficar abaixo da referencia e comecou a gerar economia real.",
             )
         }
         if (currentScore.weeklyStreak >= 4) {
             unlock(
                 type = AchievementType.FOUR_WEEKS_STREAK,
                 title = "4 semanas seguidas",
-                description = "Você manteve uma sequência de quatro semanas acompanhando o medidor.",
+                description = "Voce manteve uma sequencia de quatro semanas acompanhando o medidor.",
             )
         }
         if ((updatedChallenge?.currentSavedKwh ?: 0.0) >= ((updatedChallenge?.baselineConsumptionKwh ?: 0.0) * 0.05)) {
             unlock(
                 type = AchievementType.REDUCED_FIVE_PERCENT,
                 title = "Reduziu 5%",
-                description = "Seu progresso já representa uma redução relevante em relação ao padrão de referência.",
+                description = "Seu progresso ja representa uma reducao relevante em relacao ao padrao de referencia.",
             )
         }
         if ((updatedChallenge?.currentSavedBrl ?: 0.0) >= 50.0) {
@@ -529,8 +529,8 @@ class RewardSystem @Inject constructor() {
         if (updatedChallenge?.status == EnergyChallengeStatus.COMPLETED && challengeDurationDays(updatedChallenge) > 7) {
             unlock(
                 type = AchievementType.MONTHLY_GOAL_COMPLETED,
-                title = "Meta mensal concluída",
-                description = "Você concluiu um desafio mensal de economia.",
+                title = "Meta mensal concluida",
+                description = "Voce concluiu um desafio mensal de economia.",
             )
         }
 
@@ -543,11 +543,11 @@ class RewardSystem @Inject constructor() {
         unlockedAchievements: List<Achievement>,
     ): String {
         return when {
-            unlockedAchievements.isNotEmpty() -> "Boa! Você desbloqueou ${unlockedAchievements.first().title.lowercase()} e chegou ao nível ${updatedScore.currentLevel}."
-            challengeSnapshot.updatedChallenge?.status == EnergyChallengeStatus.COMPLETED -> "Excelente! Seu desafio foi concluído e a economia já está consolidada."
+            unlockedAchievements.isNotEmpty() -> "Boa! Voce desbloqueou ${unlockedAchievements.first().title.lowercase()} e chegou ao nivel ${updatedScore.currentLevel}."
+            challengeSnapshot.updatedChallenge?.status == EnergyChallengeStatus.COMPLETED -> "Excelente! Seu desafio foi concluido e a economia ja esta consolidada."
             challengeSnapshot.weeklyConsumption?.vsExpectedPercent != null &&
                 challengeSnapshot.weeklyConsumption.vsExpectedPercent < 0 -> {
-                "Boa! Você registrou sua leitura semanal e ficou abaixo da referência esperada."
+                "Boa! Voce registrou sua leitura semanal e ficou abaixo da referencia esperada."
             }
             else -> challengeSnapshot.progressMessage
         }
@@ -565,18 +565,31 @@ class GameEngine @Inject constructor(
     private val meterReadingValidator: MeterReadingValidator,
 ) {
 
-    suspend fun ensureActiveChallenge(
+    suspend fun ensureSuggestedChallenge(
         userId: String,
         history: List<BillSummary>,
         forecast: BillForecast?,
         today: LocalDate = LocalDate.now(),
         manualTariffBrlPerKwh: Double? = null,
     ): EnergyChallenge {
-        val currentChallenge = gameRepository.observeActiveChallenge(userId).first()
-        if (currentChallenge != null && canKeepChallengeActive(currentChallenge, today)) {
-            return currentChallenge
+        val activeChallenge = gameRepository.observeActiveChallenge(userId).first()
+        if (activeChallenge != null && canKeepChallengeActive(activeChallenge, today)) {
+            return activeChallenge
         }
+
+        val suggestedChallenge = gameRepository.observeSuggestedChallenge(userId).first()
+        if (suggestedChallenge != null && canKeepChallengeSuggested(suggestedChallenge, today)) {
+            return suggestedChallenge
+        }
+
+        val dismissedChallenge = gameRepository.observeChallenges(userId).first()
+            .firstOrNull { it.status == EnergyChallengeStatus.CANCELED && canKeepDismissedChallenge(it, today) }
+        if (dismissedChallenge != null) {
+            return dismissedChallenge
+        }
+
         gameRepository.clearActiveChallenges(userId)
+        gameRepository.clearSuggestedChallenges(userId)
         val challenge = challengeGenerator.generate(
             userId = userId,
             history = history,
@@ -586,6 +599,74 @@ class GameEngine @Inject constructor(
         )
         gameRepository.upsertChallenge(challenge)
         return challenge
+    }
+
+    suspend fun acceptSuggestedChallenge(
+        userId: String,
+        challengeId: String,
+        today: LocalDate = LocalDate.now(),
+    ): EnergyChallenge? {
+        val activeChallenge = gameRepository.observeActiveChallenge(userId).first()
+        if (activeChallenge != null && canKeepChallengeActive(activeChallenge, today)) {
+            return activeChallenge
+        }
+
+        val challenge = gameRepository.getChallengeById(challengeId) ?: return null
+        if (challenge.userId != userId) return null
+
+        if (challenge.status == EnergyChallengeStatus.SUGGESTED) {
+            gameRepository.clearActiveChallenges(userId)
+            gameRepository.acceptSuggestedChallenge(challengeId)
+        }
+
+        return gameRepository.getChallengeById(challengeId)
+    }
+
+    suspend fun declineSuggestedChallenge(
+        userId: String,
+        challengeId: String,
+    ) {
+        val challenge = gameRepository.getChallengeById(challengeId) ?: return
+        if (challenge.userId != userId) return
+        if (challenge.status == EnergyChallengeStatus.SUGGESTED) {
+            gameRepository.updateChallengeStatus(
+                challengeId = challengeId,
+                status = EnergyChallengeStatus.CANCELED,
+            )
+        }
+    }
+
+    suspend fun ensureActiveChallenge(
+        userId: String,
+        history: List<BillSummary>,
+        forecast: BillForecast?,
+        today: LocalDate = LocalDate.now(),
+        manualTariffBrlPerKwh: Double? = null,
+    ): EnergyChallenge {
+        val activeChallenge = gameRepository.observeActiveChallenge(userId).first()
+        if (activeChallenge != null && canKeepChallengeActive(activeChallenge, today)) {
+            return activeChallenge
+        }
+
+        val suggestedChallenge = ensureSuggestedChallenge(
+            userId = userId,
+            history = history,
+            forecast = forecast,
+            today = today,
+            manualTariffBrlPerKwh = manualTariffBrlPerKwh,
+        )
+
+        return when (suggestedChallenge.status) {
+            EnergyChallengeStatus.ACTIVE -> suggestedChallenge
+            EnergyChallengeStatus.SUGGESTED -> {
+                acceptSuggestedChallenge(
+                    userId = userId,
+                    challengeId = suggestedChallenge.id,
+                    today = today,
+                ) ?: suggestedChallenge.copy(status = EnergyChallengeStatus.ACTIVE)
+            }
+            else -> suggestedChallenge
+        }
     }
 
     suspend fun processConfirmedReading(
@@ -621,7 +702,7 @@ class GameEngine @Inject constructor(
             return AppResult.Error(
                 AppError(
                     code = "invalid_meter_reading",
-                    message = validation.blockingMessage ?: "Não foi possível validar a leitura confirmada.",
+                    message = validation.blockingMessage ?: "Nao foi possivel validar a leitura confirmada.",
                 ),
             )
         }
@@ -707,6 +788,26 @@ class GameEngine @Inject constructor(
                 savingsProjection = challengeSnapshot.savingsProjection,
                 message = message,
             ),
+        )
+    }
+}
+
+class EnsureSuggestedChallengeUseCase @Inject constructor(
+    private val gameEngine: GameEngine,
+) {
+    suspend operator fun invoke(
+        userId: String,
+        history: List<BillSummary>,
+        forecast: BillForecast?,
+        today: LocalDate = LocalDate.now(),
+        manualTariffBrlPerKwh: Double? = null,
+    ): EnergyChallenge {
+        return gameEngine.ensureSuggestedChallenge(
+            userId = userId,
+            history = history,
+            forecast = forecast,
+            today = today,
+            manualTariffBrlPerKwh = manualTariffBrlPerKwh,
         )
     }
 }
@@ -822,24 +923,27 @@ class ObserveGameProgressUseCase @Inject constructor(
 ) {
     operator fun invoke(userId: String): Flow<GameProgress> {
         return combine(
+            gameRepository.observeSuggestedChallenge(userId),
             gameRepository.observeActiveChallenge(userId),
             meterReadingRepository.observeReadings(userId),
             gameRepository.observeUserScore(userId),
             gameRepository.observeAchievements(userId),
-        ) { activeChallenge, readings, userScore, achievements ->
+        ) { suggestedChallenge, activeChallenge, readings, userScore, achievements ->
             val latestReading = readings.firstOrNull()
             val pendingWeeklyReading = latestReading?.readingDate?.let(::parseDate)?.let { latestDate ->
                 ChronoUnit.DAYS.between(latestDate, LocalDate.now()) >= 7
             } ?: true
 
             val motivationalMessage = when {
-                activeChallenge?.status == EnergyChallengeStatus.COMPLETED -> "Desafio concluído. Hora de aceitar a próxima meta."
-                pendingWeeklyReading -> "Sua leitura semanal está pendente. Registrar o medidor ajuda a manter o desafio atualizado."
-                activeChallenge != null -> "Seu desafio atual já está em andamento. Continue acompanhando para manter o ritmo."
-                else -> "Vamos começar definindo sua próxima meta de economia."
+                activeChallenge?.status == EnergyChallengeStatus.COMPLETED -> "Desafio concluido. Hora de aceitar a proxima meta."
+                suggestedChallenge != null -> "Encontramos uma nova oportunidade de economia para voce. Vale conferir a sugestao antes de comecar."
+                pendingWeeklyReading -> "Sua leitura semanal esta pendente. Registrar o medidor ajuda a manter o desafio atualizado."
+                activeChallenge != null -> "Seu desafio atual ja esta em andamento. Continue acompanhando para manter o ritmo."
+                else -> "Vamos comecar definindo sua proxima meta de economia."
             }
 
             GameProgress(
+                suggestedChallenge = suggestedChallenge,
                 activeChallenge = activeChallenge,
                 latestWeeklyConsumption = buildLatestWeeklyConsumption(readings),
                 userScore = userScore,
@@ -875,6 +979,16 @@ private fun buildLatestWeeklyConsumption(readings: List<MeterReading>): WeeklyCo
 private fun canKeepChallengeActive(challenge: EnergyChallenge, today: LocalDate): Boolean {
     val endDate = parseDate(challenge.endDate) ?: return false
     return challenge.status == EnergyChallengeStatus.ACTIVE && !today.isAfter(endDate)
+}
+
+private fun canKeepChallengeSuggested(challenge: EnergyChallenge, today: LocalDate): Boolean {
+    val endDate = parseDate(challenge.endDate) ?: return false
+    return challenge.status == EnergyChallengeStatus.SUGGESTED && !today.isAfter(endDate)
+}
+
+private fun canKeepDismissedChallenge(challenge: EnergyChallenge, today: LocalDate): Boolean {
+    val endDate = parseDate(challenge.endDate) ?: return false
+    return challenge.status == EnergyChallengeStatus.CANCELED && !today.isAfter(endDate)
 }
 
 private fun challengeDurationDays(challenge: EnergyChallenge?): Int {

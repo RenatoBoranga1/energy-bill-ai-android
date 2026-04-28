@@ -18,11 +18,13 @@ import br.com.energybillai.data.repository.game.DefaultMeterReadingRepository
 import br.com.energybillai.data.remote.AuthService
 import br.com.energybillai.data.remote.BillService
 import br.com.energybillai.data.remote.DocumentService
+import br.com.energybillai.domain.game.repository.GameReminderRepository
 import br.com.energybillai.domain.game.repository.GameRepository
 import br.com.energybillai.domain.game.repository.MeterReadingRepository
 import br.com.energybillai.domain.repository.AuthRepository
 import br.com.energybillai.domain.repository.BillRepository
 import br.com.energybillai.domain.repository.SessionRepository
+import br.com.energybillai.feature.game.reminders.DefaultGameReminderRepository
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -38,6 +40,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import androidx.work.WorkManager
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -81,6 +84,12 @@ object AppModule {
 
     @Provides
     fun provideAchievementDao(database: EnergyBillDatabase): AchievementDao = database.achievementDao()
+
+    @Provides
+    @Singleton
+    fun provideWorkManager(
+        @dagger.hilt.android.qualifiers.ApplicationContext context: android.content.Context,
+    ): WorkManager = WorkManager.getInstance(context)
 
     @Provides
     @Singleton
@@ -192,4 +201,8 @@ abstract class RepositoryBindings {
     @Binds
     @Singleton
     abstract fun bindMeterReadingRepository(implementation: DefaultMeterReadingRepository): MeterReadingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGameReminderRepository(implementation: DefaultGameReminderRepository): GameReminderRepository
 }

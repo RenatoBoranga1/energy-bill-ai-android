@@ -13,18 +13,26 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CropFree
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.TipsAndUpdates
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -58,6 +66,7 @@ import br.com.energybillai.core.designsystem.InlineWarning
 import br.com.energybillai.core.designsystem.PrimaryActionButton
 import br.com.energybillai.core.ocr.MeterReadingOcrProcessor
 import br.com.energybillai.core.ocr.MeterReadingOcrResult
+import br.com.energybillai.core.ocr.MeterReadingRoiHint
 import br.com.energybillai.data.local.game.MeterReadingDraft
 import br.com.energybillai.data.local.game.MeterReadingDraftStore
 import br.com.energybillai.data.local.game.MeterReadingImageStore
@@ -102,7 +111,12 @@ class MeterReadingCaptureViewModel @Inject constructor(
                 }
             }
 
-            val analyzedResult = when (val scan = ocrProcessor.analyze(persistedImageUri)) {
+            val analyzedResult = when (
+                val scan = ocrProcessor.analyze(
+                    imageUri = persistedImageUri,
+                    roiHint = MeterReadingRoiHint(),
+                )
+            ) {
                 is AppResult.Success -> scan.data
                 is AppResult.Error -> {
                     MeterReadingOcrResult(
@@ -110,7 +124,7 @@ class MeterReadingCaptureViewModel @Inject constructor(
                         confidenceScore = 0.0,
                         rawText = "",
                         candidates = emptyList(),
-                        warningMessage = "Não conseguimos identificar a leitura automaticamente. Você ainda pode digitar o valor manualmente.",
+                        warningMessage = "Nao conseguimos identificar a leitura automaticamente. Voce ainda pode digitar o valor manualmente.",
                     )
                 }
             }
@@ -120,6 +134,7 @@ class MeterReadingCaptureViewModel @Inject constructor(
                 extractedValue = analyzedResult.detectedValue,
                 confidenceScore = analyzedResult.confidenceScore,
                 rawText = analyzedResult.rawText,
+                candidates = analyzedResult.candidates,
                 warningMessage = analyzedResult.warningMessage,
             )
             draftStore.save(draft)
@@ -175,9 +190,7 @@ fun MeterReadingCaptureScreen(
 
     DisposableEffect(lifecycleOwner, cameraController) {
         cameraController.bindToLifecycle(lifecycleOwner)
-        onDispose {
-            cameraController.unbind()
-        }
+        onDispose { cameraController.unbind() }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -186,7 +199,7 @@ fun MeterReadingCaptureScreen(
         cameraPermissionGranted = granted
         if (!granted) {
             viewModel.onCaptureError(
-                "O acesso à câmera foi negado. Você ainda pode selecionar uma foto da galeria.",
+                "O acesso a camera foi negado. Voce ainda pode escolher uma foto da galeria.",
             )
         }
     }
@@ -221,19 +234,19 @@ fun MeterReadingCaptureScreen(
         )
         HeroCard(
             eyebrow = "Leitura semanal",
-            title = "Fotografe o medidor com calma",
-            supporting = "Vamos tentar identificar o número automaticamente, mas você sempre confere e confirma antes de salvar.",
+            title = "Enquadre apenas o visor do medidor",
+            supporting = "Vamos tentar ler os numeros automaticamente, mas voce sempre revisa antes de salvar.",
         )
 
         if (!cameraPermissionGranted) {
             InlineWarning(
-                text = "Se preferir, libere a câmera para capturar a leitura agora. Também é possível escolher uma foto da galeria.",
+                text = "Se preferir, libere a camera para capturar a leitura agora. Tambem e possivel escolher uma foto da galeria.",
             )
         }
 
         state.error?.let { error ->
             ErrorStatePane(
-                title = "Não foi possível preparar a leitura",
+                title = "Nao foi possivel preparar a leitura",
                 message = error.message,
                 onRetry = viewModel::clearError,
             )
@@ -241,33 +254,42 @@ fun MeterReadingCaptureScreen(
 
         AppCard(
             title = "Centralize o visor do medidor",
-            eyebrow = "Captura",
-            supporting = "Evite reflexos, aproxime a câmera e mantenha apenas os números do medidor em destaque.",
+            eyebrow = "Captura guiada",
+            supporting = "Mantenha somente os digitos dentro da moldura. Quanto menos reflexo e fundo, melhor a leitura.",
         ) {
             if (cameraPermissionGranted) {
-                AndroidView(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(320.dp),
-                    factory = { previewContext ->
-                        PreviewView(previewContext).apply {
-                            scaleType = PreviewView.ScaleType.FILL_CENTER
-                            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-                            controller = cameraController
-                        }
-                    },
-                )
+                        .height(340.dp),
+                ) {
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
+                        factory = { previewContext ->
+                            PreviewView(previewContext).apply {
+                                scaleType = PreviewView.ScaleType.FILL_CENTER
+                                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                                controller = cameraController
+                            }
+                        },
+                    )
+                    MeterReadingGuideOverlay(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(18.dp),
+                    )
+                }
             } else {
                 EmptyStatePane(
-                    title = "Câmera indisponível",
-                    message = "Autorize a câmera para capturar a leitura diretamente pelo app.",
+                    title = "Camera indisponivel",
+                    message = "Autorize a camera para capturar a leitura diretamente pelo app.",
                 )
             }
 
             if (state.isProcessing) {
                 AppCard(
                     title = "Analisando a foto",
-                    supporting = "Estamos preparando a imagem e identificando a leitura para a revisão manual.",
+                    supporting = "Estamos preparando a imagem e estimando os melhores candidatos para a revisao manual.",
                 ) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
@@ -289,7 +311,7 @@ fun MeterReadingCaptureScreen(
 
                                 override fun onError(exception: ImageCaptureException) {
                                     viewModel.onCaptureError(
-                                        exception.message ?: "Não foi possível capturar a foto do medidor.",
+                                        exception.message ?: "Nao foi possivel capturar a foto do medidor.",
                                     )
                                 }
                             },
@@ -300,7 +322,7 @@ fun MeterReadingCaptureScreen(
                 )
             } else {
                 PrimaryActionButton(
-                    text = "Permitir câmera",
+                    text = "Permitir camera",
                     onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
                     enabled = !state.isProcessing,
                 )
@@ -326,12 +348,59 @@ fun MeterReadingCaptureScreen(
 
         AppCard(
             title = "Dicas para acertar na primeira tentativa",
-            eyebrow = "Boas práticas",
+            eyebrow = "Boas praticas",
             supporting = "Uma foto mais limpa aumenta bastante a chance de reconhecer a leitura automaticamente.",
         ) {
-            TipRow("Use boa iluminação e evite sombras sobre o visor.")
+            TipRow("Use boa iluminacao e evite sombras sobre o visor.")
             TipRow("Posicione o celular de frente para o medidor, sem inclinar.")
-            TipRow("Se a leitura automática falhar, você poderá digitar o valor manualmente na próxima tela.")
+            TipRow("Tente preencher a moldura com os digitos, sem pegar muita parede ao redor.")
+            TipRow("Se a leitura automatica falhar, voce podera escolher um candidato ou digitar o valor manualmente.")
+        }
+    }
+}
+
+@Composable
+private fun MeterReadingGuideOverlay(
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(128.dp)
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    shape = MaterialTheme.shapes.extraLarge,
+                ),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.10f),
+            shape = MaterialTheme.shapes.extraLarge,
+        ) {}
+        Surface(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 18.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
+            shape = MaterialTheme.shapes.large,
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.CropFree,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Enquadre somente os digitos do visor",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
         }
     }
 }

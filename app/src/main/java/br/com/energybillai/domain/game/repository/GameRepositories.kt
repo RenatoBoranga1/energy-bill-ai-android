@@ -9,11 +9,14 @@ import br.com.energybillai.domain.game.model.UserScore
 import kotlinx.coroutines.flow.Flow
 
 interface GameRepository {
+    fun observeSuggestedChallenge(userId: String): Flow<EnergyChallenge?>
     fun observeActiveChallenge(userId: String): Flow<EnergyChallenge?>
     fun observeChallenges(userId: String): Flow<List<EnergyChallenge>>
     suspend fun getChallengeById(challengeId: String): EnergyChallenge?
     suspend fun upsertChallenge(challenge: EnergyChallenge)
+    suspend fun acceptSuggestedChallenge(challengeId: String)
     suspend fun updateChallengeStatus(challengeId: String, status: EnergyChallengeStatus)
+    suspend fun clearSuggestedChallenges(userId: String)
     suspend fun clearActiveChallenges(userId: String)
 
     fun observeUserScore(userId: String): Flow<UserScore?>
@@ -32,4 +35,9 @@ interface MeterReadingRepository {
     suspend fun getLatestReadings(userId: String, limit: Int): List<MeterReading>
     suspend fun saveReading(reading: MeterReading)
     suspend fun deleteReading(readingId: String)
+}
+
+interface GameReminderRepository {
+    suspend fun ensureScheduled()
+    suspend fun cancelAll()
 }
